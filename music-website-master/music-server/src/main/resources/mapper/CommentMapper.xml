@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.duolcmusic.mapper.CommentMapper">
-  <resultMap id="BaseResultMap" type="com.example.duolcmusic.model.domain.Comment">
+<mapper namespace="com.example.jimi.mapper.CommentMapper">
+  <resultMap id="BaseResultMap" type="com.example.jimi.model.domain.Comment">
     <id column="id" property="id" jdbcType="INTEGER" />
     <result column="user_id" property="userId" jdbcType="INTEGER" />
     <result column="song_id" property="songId" jdbcType="INTEGER" />
