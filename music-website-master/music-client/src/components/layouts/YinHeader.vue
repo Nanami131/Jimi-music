@@ -65,11 +65,25 @@ export default defineComponent({
       }
     }
 
-    function goMenuList(path) {
+    function goMenuList(path: string) {
       if (path == RouterName.SignOut) {
-        proxy.$store.commit("setToken", false);
-        changeIndex(NavName.Home);
-        routerManager(RouterName.Home, { path: RouterName.Home });
+        HttpManager.logout().then(response => {
+          if ((response as any).success) { // 修改 1
+            proxy.$store.commit("setToken", false);
+            changeIndex(NavName.Home);
+            routerManager(RouterName.Home, { path: RouterName.Home });
+          } else {
+            (proxy as any).$message({
+              message: (response as any).message || "退出登录失败", // 修改 2
+              type: "error",
+            });
+          }
+        }).catch(err => {
+          (proxy as any).$message({
+            message: "退出登录请求失败",
+            type: "error",
+          });
+        });
       } else {
         routerManager(path, { path });
       }

@@ -50,6 +50,15 @@ public class ConsumerController {
     public R loginStatus(@RequestBody ConsumerRequest loginRequest, HttpSession session) {
         return consumerService.loginStatus(loginRequest, session);
     }
+
+    /**
+     * TODO 前端 登出
+     * 退出登录
+     */
+    @PostMapping("/user/logout")
+    public R logout(HttpSession session) {
+        return consumerService.logout(session);
+    }
     /**
      * email登录
      */

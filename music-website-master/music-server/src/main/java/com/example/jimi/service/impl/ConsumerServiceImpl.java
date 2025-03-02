@@ -82,6 +82,7 @@ public class ConsumerServiceImpl extends ServiceImpl<ConsumerMapper, Consumer>
         }
     }
 
+
     @Override
     public R updateUserMsg(ConsumerRequest updateRequest) {
         Consumer consumer = new Consumer();
@@ -129,6 +130,17 @@ public class ConsumerServiceImpl extends ServiceImpl<ConsumerMapper, Consumer>
         } else {
             return R.error("密码修改失败");
         }
+    }
+
+
+    /**
+     * 退出登录
+     * @return
+     */
+    @Override
+    public R logout(HttpSession session) {
+        session.invalidate(); // 销毁 session
+        return R.success("退出登录成功");
     }
 
 

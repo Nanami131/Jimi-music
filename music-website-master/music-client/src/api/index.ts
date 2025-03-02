@@ -7,6 +7,8 @@ const HttpManager = {
   // 登录
   signIn: ({username,password}) => post(`user/login/status`, {username,password}),
   signInByemail: ({email,password})=>post(`user/email/status`, {email,password}),
+  // 退出登录
+  logout: () => post(`user/logout`, {}),
   // 注册
   SignUp: ({username,password,sex,phoneNum,email,birth,introduction,location}) => post(`user/add`, {username,password,sex,phoneNum,email,birth,introduction,location}),
   // 删除用户
