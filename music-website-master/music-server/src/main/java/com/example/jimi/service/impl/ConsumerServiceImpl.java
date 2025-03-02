@@ -18,6 +18,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpSession;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Objects;
 
 import static com.example.jimi.constant.LoadConstants.SALT;
 
@@ -34,9 +36,6 @@ public class ConsumerServiceImpl extends ServiceImpl<ConsumerMapper, Consumer>
      */
     @Override
     public R addUser(ConsumerRequest registryRequest) {
-        if (this.existUser(registryRequest.getUsername())) {
-            return R.warning("用户名已注册");
-        }
         Consumer consumer = new Consumer();
         BeanUtils.copyProperties(registryRequest, consumer);
         //MD5加密
@@ -50,18 +49,34 @@ public class ConsumerServiceImpl extends ServiceImpl<ConsumerMapper, Consumer>
             consumer.setEmail(null);
         }
         consumer.setAvator("img/avatorImages/user.jpg");
-        try {
-            QueryWrapper<Consumer> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("email",consumer.getEmail());
-            Consumer one = consumerMapper.selectOne(queryWrapper);
-            if (one!=null){
-                return R.fatal("邮箱不允许重复");
+        QueryWrapper<Consumer> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("username", registryRequest.getUsername())
+                .or()
+                .eq("email", consumer.getEmail())
+                .or()
+                .eq("phone_num", consumer.getPhoneNum());
+
+        List<Consumer> existingConsumers = consumerMapper.selectList(queryWrapper);
+        if (!existingConsumers.isEmpty()) {
+            for (Consumer existing : existingConsumers) {
+                if (registryRequest.getUsername().equals(existing.getUsername())) {
+                    return R.warning("用户名已注册");
+                }
+                //避免空值
+                if (Objects.equals(consumer.getEmail(), existing.getEmail())) {
+                    return R.fatal("邮箱不允许重复");
+                }
+                if (Objects.equals(consumer.getPhoneNum(), existing.getPhoneNum())) {
+                    return R.fatal("手机号已被注册");
+                }
             }
+        }
+
+        try {
             if (consumerMapper.insert(consumer) > 0) {
                 return R.success("注册成功");
-            } else {
-                return R.error("注册失败");
             }
+            return R.error("注册失败");
         } catch (DuplicateKeyException e) {
             return R.fatal(e.getMessage());
         }

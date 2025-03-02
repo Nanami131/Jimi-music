@@ -5,10 +5,12 @@ import lombok.Data;
 
 import java.util.Date;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Null;
 
 
 @Data
 public class ConsumerRequest {
+    @Null(message = "不能手动指定id", groups = ValidationGroups.CreateValidationGroup.class)
     private Integer id;
 
     @NotBlank(message = "用户名不能为空", groups = ValidationGroups.CreateValidationGroup.class)
