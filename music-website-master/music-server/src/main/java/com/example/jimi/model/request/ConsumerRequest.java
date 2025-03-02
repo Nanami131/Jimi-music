@@ -1,6 +1,6 @@
 package com.example.jimi.model.request;
 
-import com.example.jimi.validation.ValidationGroups;
+import com.example.jimi.common.validation.ValidationGroups;
 import lombok.Data;
 
 import java.util.Date;

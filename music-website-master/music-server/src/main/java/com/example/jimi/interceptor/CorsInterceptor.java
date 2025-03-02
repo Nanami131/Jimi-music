@@ -1,4 +1,4 @@
-package com.example.jimi.config;
+package com.example.jimi.interceptor;
 
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 

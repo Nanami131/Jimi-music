@@ -8,7 +8,7 @@ import com.example.jimi.service.ConsumerService;
 import com.example.jimi.service.impl.ConsumerServiceImpl;
 import com.example.jimi.service.impl.SimpleOrderManager;
 import com.example.jimi.utils.RandomUtils;
-import com.example.jimi.validation.ValidationGroups;
+import com.example.jimi.common.validation.ValidationGroups;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;

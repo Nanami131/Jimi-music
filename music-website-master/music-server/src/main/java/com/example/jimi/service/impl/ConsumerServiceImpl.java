@@ -41,7 +41,7 @@ public class ConsumerServiceImpl extends ServiceImpl<ConsumerMapper, Consumer>
         //MD5加密
         String password = DigestUtils.md5DigestAsHex((SALT + registryRequest.getPassword()).getBytes(StandardCharsets.UTF_8));
         consumer.setPassword(password);
-        //都用用
+        //没钱 暂时不搞手机号和邮箱验证
         if (StringUtils.isBlank(consumer.getPhoneNum())) {
             consumer.setPhoneNum(null);
         }
