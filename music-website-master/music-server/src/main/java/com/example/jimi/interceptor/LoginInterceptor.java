@@ -13,8 +13,11 @@ public class LoginInterceptor implements HandlerInterceptor {
         Object user =session.getAttribute("username");
         if(user==null){
             response.setStatus(401);
+            response.getWriter().write("{\"code\":401,\"message\":\"会话已过期，请重新登录\",\"success\":false}");
             return false;
         }
+        session.setMaxInactiveInterval(6400);
+        //System.out.println("2"+user.toString());
         return true;
     }
 }

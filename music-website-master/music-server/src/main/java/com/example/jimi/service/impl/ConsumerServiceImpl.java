@@ -206,6 +206,7 @@ public class ConsumerServiceImpl extends ServiceImpl<ConsumerMapper, Consumer>
 
         if (this.verityPasswd(username, password)) {
             session.setAttribute("username", username);
+            session.setMaxInactiveInterval(6400);
             Consumer consumer = new Consumer();
             consumer.setUsername(username);
             return R.success("登录成功", consumerMapper.selectList(new QueryWrapper<>(consumer)));
