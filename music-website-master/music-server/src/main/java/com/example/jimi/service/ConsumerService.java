@@ -6,6 +6,7 @@ import com.example.jimi.model.domain.Consumer;
 import com.example.jimi.model.request.ConsumerRequest;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 public interface ConsumerService extends IService<Consumer> {
@@ -28,7 +29,7 @@ public interface ConsumerService extends IService<Consumer> {
 
     R userOfId(Integer id);
 
-    R loginStatus(ConsumerRequest loginRequest, HttpSession session);
+    R loginStatus(ConsumerRequest loginRequest, HttpSession session, HttpServletResponse response);
     R loginEmailStatus(ConsumerRequest loginRequest, HttpSession session);
     Consumer findByEmail (String email);
     R updatePassword01(ConsumerRequest updatePasswordRequest);

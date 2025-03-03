@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -200,13 +201,17 @@ public class ConsumerServiceImpl extends ServiceImpl<ConsumerMapper, Consumer>
     }
 
     @Override
-    public R loginStatus(ConsumerRequest loginRequest, HttpSession session) {
+    public R loginStatus(ConsumerRequest loginRequest, HttpSession session, HttpServletResponse response) {
         String username = loginRequest.getUsername();
         String password = loginRequest.getPassword();
 
         if (this.verityPasswd(username, password)) {
             session.setAttribute("username", username);
-            session.setMaxInactiveInterval(6400);
+
+            // 设置 JSESSIONID 的 SameSite=None
+            String cookieValue = "JSESSIONID=" + session.getId() + "; Path=/; HttpOnly; Secure; SameSite=None";
+            response.addHeader("Set-Cookie", cookieValue);
+
             Consumer consumer = new Consumer();
             consumer.setUsername(username);
             return R.success("登录成功", consumerMapper.selectList(new QueryWrapper<>(consumer)));
@@ -214,7 +219,6 @@ public class ConsumerServiceImpl extends ServiceImpl<ConsumerMapper, Consumer>
             return R.error("用户名或密码错误");
         }
     }
-
     @Override
     public R loginEmailStatus(ConsumerRequest loginRequest, HttpSession session) {
         String email = loginRequest.getEmail();

@@ -25,7 +25,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/user/login/status",
                         "/user/email/status",
                         "/user/resetPassword",
-                        "/user/sendVerificationCode"
+                        "/user/sendVerificationCode",
+                        "/user/logout"
                 );
         registry.addInterceptor(corsInterceptor())
                 .addPathPatterns("/**");

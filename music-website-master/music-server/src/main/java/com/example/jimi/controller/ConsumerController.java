@@ -16,6 +16,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.util.concurrent.TimeUnit;
 
@@ -47,10 +48,11 @@ public class ConsumerController {
      * 登录判断
      */
     @PostMapping("/user/login/status")
-    public R loginStatus(@RequestBody ConsumerRequest loginRequest, HttpSession session) {
-        return consumerService.loginStatus(loginRequest, session);
+    public R loginStatus(@RequestBody ConsumerRequest loginRequest,
+                         HttpSession session,
+                         HttpServletResponse response) {
+        return consumerService.loginStatus(loginRequest, session, response);
     }
-
     /**
      * TODO 前端 登出
      * 退出登录
