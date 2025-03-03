@@ -9,6 +9,9 @@ axios.defaults.withCredentials = true;
 axios.defaults.baseURL = BASE_URL;
 axios.defaults.headers.post["Content-Type"] = "application/x-www-form-urlencoded;charset=UTF-8";
 
+// 用于跟踪 401 弹窗状态
+let isShowing401 = false;
+
 axios.interceptors.response.use(
     (response) => {
       if (response.status === 200) {
@@ -17,21 +20,26 @@ axios.interceptors.response.use(
         return Promise.reject(response);
       }
     },
-    async (error) => { // 改为 async 以处理弹窗
+    async (error) => {
       if (error.response && error.response.status) {
         switch (error.response.status) {
           case 401:
-            try {
-              await ElMessageBox.confirm("登录已到期，请重新登录", "提示", {
-                confirmButtonText: "确认",
-                type: "warning",
-                showCancelButton: false,
-              });
-              router.replace({ path: "/sign-in" });
-            } catch (e) {
-              // 用户关闭弹窗，不做额外处理
+            if (!isShowing401) { // 只在未显示弹窗时触发
+              isShowing401 = true;
+              try {
+                await ElMessageBox.confirm("登录已到期，请重新登录", "提示", {
+                  confirmButtonText: "确认",
+                  type: "warning",
+                  showCancelButton: false,
+                });
+                router.replace({ path: "/sign-in" });
+              } catch (e) {
+                // 用户关闭弹窗，不做额外处理
+              } finally {
+                isShowing401 = false; // 重置标志
+              }
             }
-            return Promise.resolve({ success: false, message: "登录已到期" }); // 返回伪成功响应
+            return Promise.resolve({ success: false, message: "登录已到期", data: null }); // 添加 data: null
           case 403:
             setTimeout(() => {
               router.replace({
