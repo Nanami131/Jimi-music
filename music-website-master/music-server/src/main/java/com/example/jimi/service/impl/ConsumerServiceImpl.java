@@ -225,7 +225,8 @@ public class ConsumerServiceImpl extends ServiceImpl<ConsumerMapper, Consumer>
                     setPhoneNum(consumer.getPhoneNum()).
                     setUsername(consumer.getUsername())
             );
-
+            Object user = session.getAttribute("user");
+            System.out.println(2+user.toString());
             String cookieValue = "JSESSIONID=" + session.getId() + "; Path=/; HttpOnly; Secure; SameSite=None";
             response.addHeader("Set-Cookie", cookieValue);
             session.setMaxInactiveInterval(11200);
