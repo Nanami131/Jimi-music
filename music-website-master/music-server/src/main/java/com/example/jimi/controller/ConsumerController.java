@@ -142,7 +142,7 @@ public class ConsumerController {
      * 更新用户信息
      */
     @PostMapping("/user/update")
-    public R updateUserMsg(@RequestBody ConsumerRequest updateRequest) {
+    public R updateUserMsg(@Validated(ValidationGroups.UpdateValidationGroup.class)@RequestBody ConsumerRequest updateRequest) {
         return consumerService.updateUserMsg(updateRequest);
     }
 

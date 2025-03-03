@@ -4,11 +4,15 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.jimi.common.R;
 import com.example.jimi.controller.MinioUploadController;
+import com.example.jimi.handler.ConsumerDTOHandler;
 import com.example.jimi.mapper.ConsumerMapper;
 import com.example.jimi.model.domain.Consumer;
+import com.example.jimi.model.domain.ConsumerDTO;
 import com.example.jimi.model.request.ConsumerRequest;
 import com.example.jimi.service.ConsumerService;
+
 import org.apache.commons.lang3.StringUtils;
+
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
@@ -86,6 +90,10 @@ public class ConsumerServiceImpl extends ServiceImpl<ConsumerMapper, Consumer>
 
     @Override
     public R updateUserMsg(ConsumerRequest updateRequest) {
+        //不能调用这个接口修改密码
+        if(!Objects.equals(ConsumerDTOHandler.getConsumerInfo().getId(),updateRequest.getId())){
+            return R.error("修改失败");
+        }
         Consumer consumer = new Consumer();
         BeanUtils.copyProperties(updateRequest, consumer);
         if (consumerMapper.updateById(consumer) > 0) {
@@ -206,14 +214,21 @@ public class ConsumerServiceImpl extends ServiceImpl<ConsumerMapper, Consumer>
         String password = loginRequest.getPassword();
 
         if (this.verityPasswd(username, password)) {
-            session.setAttribute("username", username);
-
             // 设置 JSESSIONID 的 SameSite=None
-            String cookieValue = "JSESSIONID=" + session.getId() + "; Path=/; HttpOnly; Secure; SameSite=None";
-            response.addHeader("Set-Cookie", cookieValue);
 
             Consumer consumer = new Consumer();
             consumer.setUsername(username);
+            consumer=consumerMapper.selectOne(new QueryWrapper<>(consumer));
+            session.setAttribute("user",new ConsumerDTO().
+                    setId(consumer.getId()).
+                    setEmail(consumer.getEmail()).
+                    setPhoneNum(consumer.getPhoneNum()).
+                    setUsername(consumer.getUsername())
+            );
+
+            String cookieValue = "JSESSIONID=" + session.getId() + "; Path=/; HttpOnly; Secure; SameSite=None";
+            response.addHeader("Set-Cookie", cookieValue);
+            session.setMaxInactiveInterval(11200);
             return R.success("登录成功", consumerMapper.selectList(new QueryWrapper<>(consumer)));
         } else {
             return R.error("用户名或密码错误");
