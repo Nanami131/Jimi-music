@@ -19,6 +19,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         //这里先把登录和注册排除登陆验证，其余不需要登录也应该能访问的接口后续添加
+
+        registry.addInterceptor(corsInterceptor())
+                .addPathPatterns("/**");
         registry.addInterceptor(new LoginInterceptor()).
                 excludePathPatterns(
                         "/user/add",
@@ -28,8 +31,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/user/sendVerificationCode",
                         "/user/logout"
                 );
-        registry.addInterceptor(corsInterceptor())
-                .addPathPatterns("/**");
     }
 
 }

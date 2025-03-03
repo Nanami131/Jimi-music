@@ -1,4 +1,5 @@
-const { defineConfig } = require('@vue/cli-service')
+const { defineConfig } = require('@vue/cli-service');
+
 module.exports = defineConfig({
   transpileDependencies: true,
   chainWebpack: config => {
@@ -8,5 +9,14 @@ module.exports = defineConfig({
       });
       return definitions;
     });
-  }
-})
+  },
+  devServer: {
+    client: {
+      overlay: {
+        warnings: false, // 关闭警告覆盖层
+        errors: false,   // 关闭错误覆盖层
+        runtimeErrors: false, // 关闭运行时错误覆盖层
+      },
+    },
+  },
+});
