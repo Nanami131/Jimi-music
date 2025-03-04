@@ -3,6 +3,7 @@ package com.example.jimi.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.jimi.annotation.AutoFill;
+import com.example.jimi.annotation.UserPermissionCheck;
 import com.example.jimi.common.R;
 import com.example.jimi.controller.MinioUploadController;
 import com.example.jimi.enumeration.OperationType;
@@ -94,13 +95,10 @@ public class ConsumerServiceImpl extends ServiceImpl<ConsumerMapper, Consumer>
 
 
     @AutoFill(OperationType.UPDATE)
+    @UserPermissionCheck(fieldName = "id")
     @Override
     public R updateUserMsg(ConsumerRequest updateRequest) {
-        //不能调用这个接口修改密码
-        if(!Objects.equals(ConsumerDTOHandler.getConsumerInfo().getId(),updateRequest.getId())){
-            return R.error("修改失败");
-        }
-        //在这里也处理一下非法修改密码的情况
+        //在这里也处理一下非法修改密码的情况 确保安全
         if(updateRequest.getPassword()!=null){
             return R.error("修改失败");
         }
