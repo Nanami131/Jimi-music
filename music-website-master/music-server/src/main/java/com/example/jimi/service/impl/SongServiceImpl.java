@@ -46,6 +46,10 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
         if(addSongRequest.getName()==null||"".equals(addSongRequest.getName())){
             return R.error("必须指定歌曲名");
         }
+        String introduction = addSongRequest.getIntroduction();
+        if(introduction!=null&&introduction.length()>250){
+            addSongRequest.setIntroduction(introduction.substring(0,250));
+        }
         Song song = new Song();
         BeanUtils.copyProperties(addSongRequest, song);
         String pic = "/img/songPic/tubiao.jpg";
@@ -76,6 +80,10 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
 
     @Override
     public R updateSongMsg(SongRequest updateSongRequest) {
+        String introduction = updateSongRequest.getIntroduction();
+        if(introduction!=null&&introduction.length()>250){
+            updateSongRequest.setIntroduction(introduction.substring(0,250));
+        }
         Song song = new Song();
         BeanUtils.copyProperties(updateSongRequest, song);
         if (songMapper.updateById(song) > 0) {

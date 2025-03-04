@@ -2,6 +2,7 @@ package com.example.jimi.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.jimi.annotation.UserPermissionCheck;
 import com.example.jimi.common.R;
 import com.example.jimi.mapper.CollectMapper;
 import com.example.jimi.model.domain.Collect;
@@ -16,6 +17,7 @@ public class CollectServiceImpl extends ServiceImpl<CollectMapper, Collect> impl
     @Autowired
     private CollectMapper collectMapper;
 
+    @UserPermissionCheck(fieldName = "userId")
     @Override
     public R addCollection(CollectRequest addCollectRequest) {
         //作者用type来判断收藏的是歌还是歌单
@@ -40,6 +42,7 @@ public class CollectServiceImpl extends ServiceImpl<CollectMapper, Collect> impl
         }
     }
 
+    @UserPermissionCheck(fieldName = "userId")
     @Override
     public R deleteCollect(Integer userId, Integer songId) {
         QueryWrapper<Collect> queryWrapper = new QueryWrapper();

@@ -30,6 +30,10 @@ public class SongListServiceImpl extends ServiceImpl<SongListMapper, SongList> i
     @AutoFill(OperationType.UPDATE)
     @Override
     public R updateSongListMsg(SongListRequest updateSongListRequest) {
+        String introduction = updateSongListRequest.getIntroduction();
+        if(introduction!=null&&introduction.length()>250){
+            updateSongListRequest.setIntroduction(introduction.substring(0,250));
+        }
         SongList songList = new SongList();
         BeanUtils.copyProperties(updateSongListRequest, songList);
         if (songListMapper.updateById(songList) > 0) {

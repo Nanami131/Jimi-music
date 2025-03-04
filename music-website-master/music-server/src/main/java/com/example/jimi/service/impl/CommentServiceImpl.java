@@ -2,7 +2,10 @@ package com.example.jimi.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.jimi.annotation.AutoFill;
+import com.example.jimi.annotation.UserPermissionCheck;
 import com.example.jimi.common.R;
+import com.example.jimi.enumeration.OperationType;
 import com.example.jimi.mapper.CommentMapper;
 import com.example.jimi.model.domain.Comment;
 import com.example.jimi.model.request.CommentRequest;
@@ -16,8 +19,14 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     @Autowired
     private CommentMapper commentMapper;
 
+    @AutoFill(OperationType.INSERT)
+    @UserPermissionCheck(fieldName = "userId")
     @Override
     public R addComment(CommentRequest addCommentRequest) {
+        String content = addCommentRequest.getContent();
+        if(content!=null&&content.length()>250){
+            addCommentRequest.setContent(content.substring(0,250));
+        }
         Comment comment = new Comment();
         BeanUtils.copyProperties(addCommentRequest, comment);
         comment.setType(addCommentRequest.getNowType());
@@ -41,6 +50,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
 
     //    删除评论
     @Override
+    @UserPermissionCheck(fieldName = "userId")
     public R deleteComment(Integer id) {
         if (commentMapper.deleteById(id) > 0) {
             return R.success("删除成功");

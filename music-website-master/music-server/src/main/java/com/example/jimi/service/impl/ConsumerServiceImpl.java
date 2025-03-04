@@ -102,7 +102,10 @@ public class ConsumerServiceImpl extends ServiceImpl<ConsumerMapper, Consumer>
         if(updateRequest.getPassword()!=null){
             return R.error("修改失败");
         }
-
+        String introduction = updateRequest.getIntroduction();
+        if(introduction!=null&&introduction.length()>250){
+            updateRequest.setIntroduction(introduction.substring(0,250));
+        }
         Consumer consumer = new Consumer();
         BeanUtils.copyProperties(updateRequest, consumer);
         if (consumerMapper.updateById(consumer) > 0) {

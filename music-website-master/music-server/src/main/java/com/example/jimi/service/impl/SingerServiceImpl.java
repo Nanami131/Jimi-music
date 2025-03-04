@@ -32,6 +32,10 @@ public class SingerServiceImpl extends ServiceImpl<SingerMapper, Singer> impleme
     private SongService songService;
     @Override
     public R updateSingerMsg(SingerRequest updateSingerRequest) {
+        String introduction = updateSingerRequest.getIntroduction();
+        if(introduction!=null&&introduction.length()>250){
+            updateSingerRequest.setIntroduction(introduction.substring(0,250));
+        }
         Singer singer = new Singer();
         BeanUtils.copyProperties(updateSingerRequest, singer);
         if (singerMapper.updateById(singer) > 0) {
@@ -81,6 +85,10 @@ public class SingerServiceImpl extends ServiceImpl<SingerMapper, Singer> impleme
 
     @Override
     public R addSinger(SingerRequest addSingerRequest) {
+        String introduction = addSingerRequest.getIntroduction();
+        if(introduction!=null&&introduction.length()>250){
+            addSingerRequest.setIntroduction(introduction.substring(0,250));
+        }
         Singer singer = new Singer();
         BeanUtils.copyProperties(addSingerRequest, singer);
         String pic = "/img/avatorImages/user.jpg";
