@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Date;
 
 @TableName(value = "rank_list")
 @Data
@@ -19,5 +20,7 @@ public class RankList implements Serializable {
     private Long consumerId;
 
     private Integer score;
+
+    private Date updateTime;
 
 }

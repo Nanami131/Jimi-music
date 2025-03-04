@@ -2,7 +2,6 @@ package com.example.jimi.aspect;
 
 import com.example.jimi.annotation.AutoFill;
 import com.example.jimi.enumeration.OperationType;
-import com.example.jimi.model.request.ConsumerRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
@@ -11,6 +10,7 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.Field;
 import java.util.Date;
 
 @Aspect
@@ -37,30 +37,35 @@ public class AutoFillAspect {
             return;
         }
 
-        // 假设第一个参数是 ConsumerRequest
-        if (!(args[0] instanceof ConsumerRequest)) {
+        // 约定第一个参数为DTO对象
+        Object dto = args[0];
+        if (dto == null) {
             return;
         }
-        ConsumerRequest consumerRequest = (ConsumerRequest) args[0];
+
         Date now = new Date();
-        System.out.println(now);
-        // 根据操作类型填充时间
-        if (operationType == OperationType.INSERT) {
-            try {
-                if (consumerRequest.getCreateTime() == null) {
-                    consumerRequest.setCreateTime(now);
-                }
-                if (consumerRequest.getUpdateTime() == null) {
-                    consumerRequest.setUpdateTime(now);
-                }
-            } catch (Exception e) {
-                log.error("插入时自动填充时间失败: {}", e.getMessage());
-            }
-        } else if (operationType == OperationType.UPDATE) {
-            try {
-                consumerRequest.setUpdateTime(now);
-            } catch (Exception e) {
-                log.error("更新时自动填充时间失败: {}", e.getMessage());
+        try {
+            fillTimeFields(dto, operationType, now);
+        } catch (Exception e) {
+            log.error("自动填充时间字段失败: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 使用反射填充时间字段
+     */
+    private void fillTimeFields(Object dto, OperationType operationType, Date now) throws Exception {
+        Class<?> clazz = dto.getClass();
+        Field[] fields = clazz.getDeclaredFields(); //这个方法能获得包括私有字段的所有字段
+
+        for (Field field : fields) {
+            field.setAccessible(true);
+            String fieldName = field.getName();
+
+            if ("createTime".equals(fieldName) && operationType == OperationType.INSERT) {
+                field.set(dto, now);
+            } else if ("updateTime".equals(fieldName)) {
+                field.set(dto, now); // INSERT 和 UPDATE 都会更新 updateTime
             }
         }
     }

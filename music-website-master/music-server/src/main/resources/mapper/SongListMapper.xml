@@ -6,12 +6,14 @@
     <result column="title" property="title" jdbcType="VARCHAR" />
     <result column="pic" property="pic" jdbcType="VARCHAR" />
     <result column="style" property="style" jdbcType="VARCHAR" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
   </resultMap>
   <resultMap id="ResultMapWithBLOBs" type="com.example.jimi.model.domain.SongList" extends="BaseResultMap">
     <result column="introduction" property="introduction" jdbcType="LONGVARCHAR" />
   </resultMap>
   <sql id="Base_Column_List">
-    id, title, pic, style
+    id, title, pic, create_time, update_time, style
   </sql>
   <sql id="Blob_Column_List">
     introduction

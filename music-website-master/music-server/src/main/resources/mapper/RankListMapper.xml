@@ -6,6 +6,7 @@
     <result column="songListId" property="songListId" jdbcType="BIGINT" />
     <result column="consumerId" property="consumerId" jdbcType="BIGINT" />
     <result column="score" property="score" jdbcType="INTEGER" />
+    <result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
   </resultMap>
 
   <select id="selectScoreSum" resultType="java.lang.Integer">

@@ -2,7 +2,9 @@ package com.example.jimi.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.jimi.annotation.AutoFill;
 import com.example.jimi.common.R;
+import com.example.jimi.enumeration.OperationType;
 import com.example.jimi.mapper.RankListMapper;
 import com.example.jimi.model.domain.RankList;
 import com.example.jimi.model.request.RankListRequest;
@@ -19,6 +21,7 @@ public class RankListServiceImpl extends ServiceImpl<RankListMapper, RankList> i
     @Autowired
     private RankListMapper rankMapper;
 
+    @AutoFill(OperationType.INSERT)
     @Override
     public R addRank(RankListRequest rankListAddRequest) {
         try {

@@ -2,6 +2,8 @@ package com.example.jimi.model.request;
 
 import lombok.Data;
 
+import java.util.Date;
+
 
 @Data
 public class SongListRequest {
@@ -14,4 +16,8 @@ public class SongListRequest {
     private String style;
 
     private String introduction;
+
+    private Date createTime;
+
+    private Date updateTime;
 }
