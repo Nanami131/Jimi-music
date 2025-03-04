@@ -2,8 +2,10 @@ package com.example.jimi.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.jimi.annotation.AutoFill;
 import com.example.jimi.common.R;
 import com.example.jimi.controller.MinioUploadController;
+import com.example.jimi.enumeration.OperationType;
 import com.example.jimi.handler.ConsumerDTOHandler;
 import com.example.jimi.mapper.ConsumerMapper;
 import com.example.jimi.model.domain.Consumer;
@@ -91,6 +93,7 @@ public class ConsumerServiceImpl extends ServiceImpl<ConsumerMapper, Consumer>
     }
 
 
+    @AutoFill(OperationType.UPDATE)
     @Override
     public R updateUserMsg(ConsumerRequest updateRequest) {
         //不能调用这个接口修改密码

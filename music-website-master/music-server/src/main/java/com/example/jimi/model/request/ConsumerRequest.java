@@ -38,5 +38,7 @@ public class ConsumerRequest {
 
     private Date createTime;
 
+    private Date updateTime;
+
 }
 
