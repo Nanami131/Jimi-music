@@ -21,14 +21,25 @@ public class RankListServiceImpl extends ServiceImpl<RankListMapper, RankList> i
 
     @Override
     public R addRank(RankListRequest rankListAddRequest) {
-        RankList rankList = new RankList();
-        BeanUtils.copyProperties(rankListAddRequest, rankList);
-        if (rankMapper.insert(rankList) > 0) {
+        try {
+            RankList rankList = new RankList();
+            BeanUtils.copyProperties(rankListAddRequest, rankList);
+
+            // 使用 MyBatis Plus 的 upsert 方式
+            QueryWrapper<RankList> wrapper = new QueryWrapper<>();
+            wrapper.eq("consumer_id", rankList.getConsumerId())
+                    .eq("song_list_id", rankList.getSongListId());
+
+            // 尝试更新，若无记录则插入
+            if (rankMapper.update(rankList, wrapper) == 0) {
+                rankMapper.insert(rankList); // 无记录时插入
+            }
             return R.success("评价成功");
-        } else {
-            return R.error("评价失败");
+        } catch (Exception e) {
+            return R.error("评价失败: " + e.getMessage());
         }
     }
+
 
     @Override
     public R rankOfSongListId(Long songListId) {
