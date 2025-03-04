@@ -100,6 +100,11 @@ public class ConsumerServiceImpl extends ServiceImpl<ConsumerMapper, Consumer>
         if(!Objects.equals(ConsumerDTOHandler.getConsumerInfo().getId(),updateRequest.getId())){
             return R.error("修改失败");
         }
+        //在这里也处理一下非法修改密码的情况
+        if(updateRequest.getPassword()!=null){
+            return R.error("修改失败");
+        }
+
         Consumer consumer = new Consumer();
         BeanUtils.copyProperties(updateRequest, consumer);
         if (consumerMapper.updateById(consumer) > 0) {
