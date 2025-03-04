@@ -11,6 +11,7 @@ import com.example.jimi.model.domain.ConsumerDTO;
 import com.example.jimi.model.request.ConsumerRequest;
 import com.example.jimi.service.ConsumerService;
 
+import com.example.jimi.utils.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import org.springframework.beans.BeanUtils;
@@ -23,6 +24,8 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
@@ -155,13 +158,15 @@ public class ConsumerServiceImpl extends ServiceImpl<ConsumerMapper, Consumer>
 
     @Override
     public R updateUserAvator(MultipartFile avatorFile, int id) {
-        String fileName = avatorFile.getOriginalFilename();
+        String originalFilename = avatorFile.getOriginalFilename();
+        String timestamp = new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date());
+        String fileName = timestamp + RandomUtils.code() + id + originalFilename.substring(originalFilename.lastIndexOf("."));
         String imgPath = "/img/avatorImages/" + fileName;
         Consumer consumer = new Consumer();
         consumer.setId(id);
         consumer.setAvator(imgPath);
-        String s = MinioUploadController.uploadAtorImgFile(avatorFile);
-        if (s.equals("File uploaded successfully!")&&consumerMapper.updateById(consumer) > 0) {
+        String s = MinioUploadController.uploadAtorImgFile(avatorFile,fileName);
+        if (s.equals("File uploaded successfully!") && consumerMapper.updateById(consumer) > 0) {
             return R.success("上传成功", imgPath);
         } else {
             return R.error("上传失败");

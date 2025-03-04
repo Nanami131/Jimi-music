@@ -121,14 +121,14 @@ public class MinioUploadController {
         }
     }
 
-    public static String uploadAtorImgFile(MultipartFile file) {
+    public static String uploadAtorImgFile(MultipartFile file,String name) {
         try {
             init();
             InputStream inputStream = file.getInputStream();
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
-                            .object("/img/avatorImages/"+file.getOriginalFilename())
+                            .object("/img/avatorImages/"+name)
                             .stream(inputStream, inputStream.available(), -1)
                             .contentType(file.getContentType())
                             .build()
