@@ -29,7 +29,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/user/email/status",
                         "/user/resetPassword",
                         "/user/sendVerificationCode",
-                        "/user/logout"
+                        "/user/logout",
+                        "/admin/login/status"
                 );
     }
 

@@ -14,7 +14,15 @@ public class LoginInterceptor implements HandlerInterceptor {
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true; // 直接通过，不检查 session
         }
+
         HttpSession session = request.getSession();
+        Object admin =session.getAttribute("admin");
+        if(admin!=null){
+            session.setMaxInactiveInterval(6400);
+            //特权用户
+            ConsumerDTOHandler.setConsumerInfo(new ConsumerDTO().setId(0));
+            return true;
+        }
         Object user =session.getAttribute("user");
         if(user==null){
             response.setStatus(401);

@@ -24,7 +24,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         queryWrapper.eq("name",adminRequest.getUsername());
         queryWrapper.eq("password",adminRequest.getPassword());
         if (adminMapper.selectCount(queryWrapper) > 0) {
-            session.setAttribute("name", adminRequest.getUsername());
+            session.setAttribute("admin", adminRequest.getUsername());
             return R.success("登录成功");
         } else {
             return R.error("用户名或密码错误");

@@ -33,6 +33,10 @@ public class UserPermissionCheckAspect {
             throw new RuntimeException("用户未登录或信息缺失");
         }
         Integer currentUserId = currentUser.getId();
+        if(currentUserId==0){
+            log.info("管理员你好", currentUserId);
+            return;
+        }
         log.info("当前用户 ID: {}", currentUserId);
 
         // 获取方法签名和注解 UserPermissionCheck
