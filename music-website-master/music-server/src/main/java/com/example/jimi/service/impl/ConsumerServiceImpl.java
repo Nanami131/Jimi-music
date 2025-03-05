@@ -7,7 +7,6 @@ import com.example.jimi.annotation.UserPermissionCheck;
 import com.example.jimi.common.R;
 import com.example.jimi.controller.MinioUploadController;
 import com.example.jimi.enumeration.OperationType;
-import com.example.jimi.handler.ConsumerDTOHandler;
 import com.example.jimi.mapper.ConsumerMapper;
 import com.example.jimi.model.domain.Consumer;
 import com.example.jimi.model.domain.ConsumerDTO;
@@ -15,7 +14,6 @@ import com.example.jimi.model.request.ConsumerRequest;
 import com.example.jimi.service.ConsumerService;
 
 import com.example.jimi.utils.FileNameUtils;
-import com.example.jimi.utils.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import org.springframework.beans.BeanUtils;
@@ -28,8 +26,6 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
@@ -175,7 +171,7 @@ public class ConsumerServiceImpl extends ServiceImpl<ConsumerMapper, Consumer>
 
         consumer.setId(id);
         consumer.setAvator(fileName);
-        String s = MinioUploadController.uploadAtorImgFile(avatorFile,fileName);
+        String s = MinioUploadController.uploadImgFile(avatorFile,fileName);
         if (s.equals("File uploaded successfully!") && consumerMapper.updateById(consumer) > 0) {
             return R.success("上传成功", fileName);
         } else {

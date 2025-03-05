@@ -11,6 +11,7 @@ import com.example.jimi.model.domain.Song;
 import com.example.jimi.model.request.SingerRequest;
 import com.example.jimi.service.SingerService;
 import com.example.jimi.service.SongService;
+import com.example.jimi.utils.FileNameUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -47,14 +48,15 @@ public class SingerServiceImpl extends ServiceImpl<SingerMapper, Singer> impleme
 
     @Override
     public R updateSingerPic(MultipartFile avatorFile, int id) {
-        String fileName =  avatorFile.getOriginalFilename();
-        MinioUploadController.uploadImgFile(avatorFile);
-        String imgPath = "/user01/singer/img/" + fileName;
+        String originalFilename = avatorFile.getOriginalFilename();
+        String fileName= FileNameUtils.defineNamePath(originalFilename,"/singer/img/",id);
+
         Singer singer = new Singer();
         singer.setId(id);
-        singer.setPic(imgPath);
-        if (singerMapper.updateById(singer) > 0) {
-            return R.success("上传成功", imgPath);
+        singer.setPic("/user01"+fileName);
+        String s= MinioUploadController.uploadImgFile(avatorFile,fileName);
+        if (s.equals("File uploaded successfully!") && singerMapper.updateById(singer) > 0) {
+            return R.success("上传成功", fileName);
         } else {
             return R.error("上传失败");
         }

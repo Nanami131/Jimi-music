@@ -8,6 +8,7 @@ import com.example.jimi.mapper.SongMapper;
 import com.example.jimi.model.domain.Song;
 import com.example.jimi.model.request.SongRequest;
 import com.example.jimi.service.SongService;
+import com.example.jimi.utils.FileNameUtils;
 import io.minio.MinioClient;
 import io.minio.RemoveObjectArgs;
 import io.minio.errors.*;
@@ -140,14 +141,14 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
 
     @Override
     public R updateSongPic(MultipartFile urlFile, int id) {
-        String fileName =  urlFile.getOriginalFilename();
-        String storeUrlPath = "/user01/singer/song/" + fileName;
-        MinioUploadController.uploadSongImgFile(urlFile);
+        String originalFilename =  urlFile.getOriginalFilename();
+        String fileName = FileNameUtils.defineNamePath(originalFilename,"/singer/song/",id);
         Song song = new Song();
         song.setId(id);
-        song.setPic(storeUrlPath);
-        if (songMapper.updateById(song) > 0) {
-            return R.success("上传成功", storeUrlPath);
+        song.setPic("/user01"+fileName);
+        String s = MinioUploadController.uploadImgFile(urlFile,fileName);
+        if (s.equals("File uploaded successfully!") && songMapper.updateById(song) > 0) {
+            return R.success("上传成功", fileName);
         } else {
             return R.error("上传失败");
         }

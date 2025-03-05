@@ -10,9 +10,9 @@ import com.example.jimi.mapper.SongListMapper;
 import com.example.jimi.model.domain.SongList;
 import com.example.jimi.model.request.SongListRequest;
 import com.example.jimi.service.SongListService;
+import com.example.jimi.utils.FileNameUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,8 +24,6 @@ public class SongListServiceImpl extends ServiceImpl<SongListMapper, SongList> i
 
     @Autowired
     private SongListMapper songListMapper;
-    @Value("${minio.bucket-name}")
-    String bucketName;
 
     @AutoFill(OperationType.UPDATE)
     @Override
@@ -93,15 +91,16 @@ public class SongListServiceImpl extends ServiceImpl<SongListMapper, SongList> i
 
     @Override
     public R updateSongListImg(MultipartFile avatorFile, @RequestParam("id") int id) {
-        String fileName =avatorFile.getOriginalFilename();
-        String path="/"+bucketName+"/"+"songlist/";
-        String imgPath = path + fileName;
-        MinioUploadController.uploadSonglistImgFile(avatorFile);
+        String originalFilename =avatorFile.getOriginalFilename();
+        String fileName = FileNameUtils.defineNamePath(originalFilename,"/songlist/",id);
+
         SongList songList = new SongList();
         songList.setId(id);
-        songList.setPic(imgPath);
-        if (songListMapper.updateById(songList) > 0) {
-            return R.success("上传成功", imgPath);
+        songList.setPic("/user01"+fileName);
+        String s = MinioUploadController.uploadImgFile(avatorFile,fileName);
+
+        if (s.equals("File uploaded successfully!") && songListMapper.updateById(songList) > 0) {
+            return R.success("上传成功", fileName);
         } else {
             return R.error("上传失败");
         }
