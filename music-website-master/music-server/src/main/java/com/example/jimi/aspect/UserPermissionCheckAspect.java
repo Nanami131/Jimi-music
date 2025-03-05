@@ -58,8 +58,8 @@ public class UserPermissionCheckAspect {
             throw new IllegalArgumentException("DTO 参数为空");
         }
 
-        // 反射获取 DTO 中的 ID 值
-        Integer requestUserId;
+        // 用long接 1.开销小 2.不会溢出
+        long requestUserId;
         try {
             Field field = dto.getClass().getDeclaredField(fieldName);
             field.setAccessible(true);
@@ -68,14 +68,22 @@ public class UserPermissionCheckAspect {
                 log.error("DTO 中的 {} 字段为空", fieldName);
                 throw new IllegalArgumentException("用户 ID 字段为空");
             }
-            requestUserId = (Integer) idValue;
+            // 这里是个坑！！！这里的filename对应的属性有的是int，有的是long
+            if (idValue instanceof Integer) {
+                requestUserId = ((Integer) idValue).longValue();
+            } else if (idValue instanceof Long) {
+                requestUserId = (Long) idValue;
+            } else {
+                log.error("DTO字段 {} 类型不支持: {}", fieldName, idValue.getClass());
+                throw new IllegalArgumentException("用户 ID 字段类型不支持: " + idValue.getClass());
+            }
         } catch (NoSuchFieldException e) {
             log.error("DTO 中未找到字段: {}", fieldName);
             throw new IllegalArgumentException("无效的用户 ID 字段名: " + fieldName);
         }
 
         // 校验权限
-        if (!Objects.equals(currentUserId, requestUserId)) {
+        if (currentUserId.longValue() != requestUserId) {
             log.warn("权限校验失败，当前用户 ID: {}, 请求用户 ID: {}", currentUserId, requestUserId);
             throw new RuntimeException("无权限修改他人信息");
         }
