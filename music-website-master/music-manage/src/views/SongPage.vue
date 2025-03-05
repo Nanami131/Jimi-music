@@ -39,15 +39,33 @@
       </el-table-column>
       <el-table-column label="资源更新" width="120" align="center">
         <template v-slot="scope">
-          <el-upload :action="updateSongImg(scope.row.id)" :show-file-list="false" :on-success="handleImgSuccess" :before-upload="beforeImgUpload">
+          <el-upload
+              :action="updateSongImg(scope.row.id)"
+              :show-file-list="false"
+              :on-success="handleImgSuccess"
+              :before-upload="beforeImgUpload"
+              :http-request="customUploadImg"
+          >
             <el-button>更新图片</el-button>
           </el-upload>
           <br />
-          <el-upload :action="updateSongUrl(scope.row.id)" :show-file-list="false" :on-success="handleSongSuccess" :before-upload="beforeSongUpload">
+          <el-upload
+              :action="updateSongUrl(scope.row.id)"
+              :show-file-list="false"
+              :on-success="handleSongSuccess"
+              :before-upload="beforeSongUpload"
+              :http-request="customUploadSong"
+          >
             <el-button>更新歌曲</el-button>
           </el-upload>
-            <br />
-           <el-upload :action="updateSongLrc(scope.row.id)" :show-file-list="false" :on-success="handleSongSuccess" :before-upload="beforeSongUpload">
+          <br />
+          <el-upload
+              :action="updateSongLrc(scope.row.id)"
+              :show-file-list="false"
+              :on-success="handleSongSuccess"
+              :before-upload="beforeSongUpload"
+              :http-request="customUploadLrc"
+          >
             <el-button>更新歌词</el-button>
           </el-upload>
         </template>
@@ -65,18 +83,18 @@
       </el-table-column>
     </el-table>
     <el-pagination
-      class="pagination"
-      background
-      layout="total, prev, pager, next"
-      :current-page="currentPage"
-      :page-size="pageSize"
-      :total="tableData.length"
-      @current-change="handleCurrentChange"
+        class="pagination"
+        background
+        layout="total, prev, pager, next"
+        :current-page="currentPage"
+        :page-size="pageSize"
+        :total="tableData.length"
+        @current-change="handleCurrentChange"
     >
     </el-pagination>
   </div>
 
-  <!--添加歌曲-->
+  <!-- 添加歌曲 -->
   <el-dialog title="添加歌曲" v-model="centerDialogVisible">
     <el-form id="add-song" label-width="120px" :model="registerForm">
       <el-form-item label="歌曲名">
@@ -89,7 +107,7 @@
         <el-input type="textarea" name="lyric" v-model="registerForm.lyric"></el-input>
       </el-form-item>
       <el-form-item label="歌词lrc上传">
-        <input type="file" name="lrcfile"/>
+        <input type="file" name="lrcfile" />
       </el-form-item>
       <el-form-item label="歌曲上传">
         <input type="file" name="file" />
@@ -136,6 +154,7 @@ import { Icon, RouterName } from "@/enums";
 import { HttpManager } from "@/api";
 import { parseLyric } from "@/utils";
 import YinDelDialog from "@/components/dialog/YinDelDialog.vue";
+import axios from "axios"; // 引入 axios
 
 export default defineComponent({
   components: {
@@ -208,7 +227,7 @@ export default defineComponent({
     function updateSongUrl(id) {
       return HttpManager.updateSongUrl(id);
     }
-     function updateSongLrc(id) {
+    function updateSongLrc(id) {
       return HttpManager.updateSongLrc(id);
     }
     // 获取当前页
@@ -222,7 +241,7 @@ export default defineComponent({
       });
       if (res.success) getData();
     }
-     function handleLyricsSuccess(res) {
+    function handleImgSuccess(res) {
       (proxy as any).$message({
         message: res.message,
         type: res.type,
@@ -230,13 +249,59 @@ export default defineComponent({
       if (res.success) getData();
     }
 
-    // 更新图片
-    function handleImgSuccess(res, file) {
-      (proxy as any).$message({
-        message: res.message,
-        type: res.type,
+    // 自定义上传方法
+    function customUploadImg(options) {
+      const formData = new FormData();
+      formData.append("file", options.file);
+      axios.post(options.action, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        withCredentials: true, // 携带 Cookie
+        onUploadProgress: options.onProgress,
+      }).then(response => {
+        console.log("Image upload success:", response.data);
+        options.onSuccess(response.data);
+      }).catch(error => {
+        console.error("Image upload error:", error.response || error);
+        options.onError(error);
       });
-      if (res.success) getData();
+    }
+
+    function customUploadSong(options) {
+      const formData = new FormData();
+      formData.append("file", options.file);
+      axios.post(options.action, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        withCredentials: true, // 携带 Cookie
+        onUploadProgress: options.onProgress,
+      }).then(response => {
+        console.log("Song upload success:", response.data);
+        options.onSuccess(response.data);
+      }).catch(error => {
+        console.error("Song upload error:", error.response || error);
+        options.onError(error);
+      });
+    }
+
+    function customUploadLrc(options) {
+      const formData = new FormData();
+      formData.append("file", options.file);
+      axios.post(options.action, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        withCredentials: true, // 携带 Cookie
+        onUploadProgress: options.onProgress,
+      }).then(response => {
+        console.log("Lyric upload success:", response.data);
+        options.onSuccess(response.data);
+      }).catch(error => {
+        console.error("Lyric upload error:", error.response || error);
+        options.onError(error);
+      });
     }
 
     /**
@@ -296,14 +361,13 @@ export default defineComponent({
             registerForm.singerName = "";
             registerForm.introduction = "";
             registerForm.lyric = "";
-           
           }
         }
       };
-      console.log(registerForm.name)
-      console.log(registerForm.singerName)
-      console.log(registerForm.introduction)
-      console.log(registerForm.lyric)
+      console.log(registerForm.name);
+      console.log(registerForm.singerName);
+      console.log(registerForm.introduction);
+      console.log(registerForm.lyric);
       req.open("post", HttpManager.attachImageUrl(`/song/add`), false);
       req.send(addSongForm);
       centerDialogVisible.value = false;
@@ -344,7 +408,7 @@ export default defineComponent({
       let name = editForm.name;
       let introduction = editForm.introduction;
       let lyric = editForm.lyric;
-      const result = (await HttpManager.updateSongMsg({id,singerId,name,introduction,lyric})) as ResponseBody;
+      const result = (await HttpManager.updateSongMsg({ id, singerId, name, introduction, lyric })) as ResponseBody;
       (proxy as any).$message({
         message: result.message,
         type: result.type,
@@ -417,8 +481,10 @@ export default defineComponent({
       editRow,
       handleSongSuccess,
       setSongUrl,
-      handleLyricsSuccess,
       goCommentPage,
+      customUploadImg, // 新增
+      customUploadSong, // 新增
+      customUploadLrc, // 新增
     };
   },
 });

@@ -13,8 +13,14 @@
           <div class="singer-img">
             <img :src="attachImageUrl(scope.row.pic)" style="width: 100%" />
           </div>
-          <el-upload :action="uploadUrl(scope.row.id)" :show-file-list="false" :on-success="handleImgSuccess" :before-upload="beforeImgUpload">
-            <el-button>更新图片</el-button>
+          <el-upload
+              :action="uploadUrl(scope.row.id)"
+              :show-file-list="false"
+              :on-success="handleImgSuccess"
+              :before-upload="beforeImgUpload"
+              :http-request="customUploadImg"
+          >
+          <el-button>更新图片</el-button>
           </el-upload>
         </template>
       </el-table-column>
@@ -50,13 +56,13 @@
       </el-table-column>
     </el-table>
     <el-pagination
-      class="pagination"
-      background
-      layout="total, prev, pager, next"
-      :current-page="currentPage"
-      :page-size="pageSize"
-      :total="tableData.length"
-      @current-change="handleCurrentChange"
+        class="pagination"
+        background
+        layout="total, prev, pager, next"
+        :current-page="currentPage"
+        :page-size="pageSize"
+        :total="tableData.length"
+        @current-change="handleCurrentChange"
     >
     </el-pagination>
   </div>
@@ -138,6 +144,7 @@ import YinDelDialog from "@/components/dialog/YinDelDialog.vue";
 import { HttpManager } from "@/api/index";
 import { RouterName } from "@/enums";
 import { getBirth } from "@/utils";
+import axios from 'axios'; // 引入 axios
 
 export default defineComponent({
   components: {
@@ -189,6 +196,25 @@ export default defineComponent({
       return HttpManager.attachImageUrl(`/singer/avatar/update?id=${id}`);
     }
 
+    // 自定义上传方法
+    function customUploadImg(options) {
+      const formData = new FormData();
+      formData.append("file", options.file);
+      axios.post(options.action, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        withCredentials: true, // 携带 Cookie
+        onUploadProgress: options.onProgress,
+      }).then(response => {
+        console.log("Image upload success:", response.data);
+        options.onSuccess(response.data);
+      }).catch(error => {
+        console.error("Image upload error:", error.response || error);
+        options.onError(error);
+      });
+    }
+
     /**
      * 路由
      */
@@ -235,7 +261,7 @@ export default defineComponent({
       let location = registerForm.location;
       let introduction = registerForm.introduction;
 
-      const result = (await HttpManager.setSinger({name,sex,birth,location,introduction})) as ResponseBody;
+      const result = (await HttpManager.setSinger({ name, sex, birth, location, introduction })) as ResponseBody;
       (proxy as any).$message({
         message: result.message,
         type: result.type,
@@ -287,7 +313,7 @@ export default defineComponent({
         let location = editForm.location;
         let introduction = editForm.introduction;
 
-        const result = (await HttpManager.updateSingerMsg({id,name,sex,birth,location,introduction})) as ResponseBody;
+        const result = (await HttpManager.updateSingerMsg({ id, name, sex, birth, location, introduction })) as ResponseBody;
         (proxy as any).$message({
           message: result.message,
           type: result.type,
@@ -366,6 +392,7 @@ export default defineComponent({
       addsinger,
       confirm,
       deleteRow,
+      customUploadImg, // 新增
     };
   },
 });

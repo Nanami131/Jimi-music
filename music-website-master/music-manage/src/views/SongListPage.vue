@@ -12,9 +12,14 @@
       <el-table-column label="歌单图片" width="110" align="center">
         <template v-slot="scope">
           <img :src="attachImageUrl(scope.row.pic)" style="width: 80px"/>
-          <el-upload :action="uploadUrl(scope.row.id)" :show-file-list="false" :on-success="handleImgSuccess"
-                     :before-upload="beforeImgUpload">
-            <el-button>更新图片</el-button>
+          <el-upload
+              :action="uploadUrl(scope.row.id)"
+              :show-file-list="false"
+              :on-success="handleImgSuccess"
+              :before-upload="beforeImgUpload"
+              :http-request="customUploadImg"
+          >
+          <el-button>更新图片</el-button>
           </el-upload>
         </template>
       </el-table-column>
@@ -103,19 +108,20 @@
 </template>
 
 <script lang="ts">
-import {computed, defineComponent, getCurrentInstance, reactive, ref, watch} from "vue";
+import { computed, defineComponent, getCurrentInstance, reactive, ref, watch } from "vue";
 import mixin from "@/mixins/mixin";
-import {HttpManager} from "@/api/index";
-import {RouterName} from "@/enums";
+import { HttpManager } from "@/api/index";
+import { RouterName } from "@/enums";
 import YinDelDialog from "@/components/dialog/YinDelDialog.vue";
-import axios from 'axios';
+import axios from 'axios'; // 引入 axios
+
 export default defineComponent({
   components: {
     YinDelDialog,
   },
   setup() {
-    const {proxy} = getCurrentInstance();
-    const {routerManager, beforeImgUpload} = mixin();
+    const { proxy } = getCurrentInstance();
+    const { routerManager, beforeImgUpload } = mixin();
 
     const tableData = ref([]); // 记录歌曲，用于显示
     const tempDate = ref([]); // 记录歌曲，用于搜索时能临时记录一份歌曲列表
@@ -159,19 +165,19 @@ export default defineComponent({
         url: 'http://localhost:8888/excle',
         responseType: 'blob', // 设置响应类型为blob
       })
-        .then((response) => {
-          const url = window.URL.createObjectURL(new Blob([response.data]));
-          const link = document.createElement('a');
-          link.href = url;
-          link.setAttribute('download', 'SongList.xlsx'); // 设置下载的文件名
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-        })
-        .catch((error) => {
-          console.error('导出歌单失败：', error);
-        });
-  }
+          .then((response) => {
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'SongList.xlsx'); // 设置下载的文件名
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+          })
+          .catch((error) => {
+            console.error('导出歌单失败：', error);
+          });
+    }
 
     // 获取当前页
     function handleCurrentChange(val) {
@@ -191,6 +197,25 @@ export default defineComponent({
       if (response.success) getData();
     }
 
+    // 自定义上传方法
+    function customUploadImg(options) {
+      const formData = new FormData();
+      formData.append("file", options.file);
+      axios.post(options.action, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        withCredentials: true, // 携带 Cookie
+        onUploadProgress: options.onProgress,
+      }).then(response => {
+        console.log("Image upload success:", response.data);
+        options.onSuccess(response.data);
+      }).catch(error => {
+        console.error("Image upload error:", error.response || error);
+        options.onError(error);
+      });
+    }
+
     /**
      * 路由
      */
@@ -206,7 +231,7 @@ export default defineComponent({
         },
       ]);
       proxy.$store.commit("setBreadcrumbList", breadcrumbList);
-      routerManager(RouterName.ListSong, {path: RouterName.ListSong, query: {id}});
+      routerManager(RouterName.ListSong, { path: RouterName.ListSong, query: { id } });
     }
 
     function goCommentPage(id) {
@@ -221,7 +246,7 @@ export default defineComponent({
         },
       ]);
       proxy.$store.commit("setBreadcrumbList", breadcrumbList);
-      routerManager(RouterName.Comment, {path: RouterName.Comment, query: {id, type: 1}});
+      routerManager(RouterName.Comment, { path: RouterName.Comment, query: { id, type: 1 } });
     }
 
     /**
@@ -238,7 +263,7 @@ export default defineComponent({
       let title = registerForm.title;
       let introduction = registerForm.introduction;
       let style = registerForm.style;
-      const result = (await HttpManager.setSongList({title, introduction, style})) as ResponseBody;
+      const result = (await HttpManager.setSongList({ title, introduction, style })) as ResponseBody;
       (proxy as any).$message({
         message: result.message,
         type: result.type,
@@ -276,13 +301,12 @@ export default defineComponent({
     }
 
     async function saveEdit() {
-
       let id = editForm.id;
       let title = editForm.title;
       let introduction = editForm.introduction;
       let style = editForm.style;
 
-      const result = (await HttpManager.updateSongListMsg({id, title, introduction, style})) as ResponseBody;
+      const result = (await HttpManager.updateSongListMsg({ id, title, introduction, style })) as ResponseBody;
       (proxy as any).$message({
         message: result.message,
         type: result.type,
@@ -352,6 +376,7 @@ export default defineComponent({
       deleteRow,
       goContentPage,
       goCommentPage,
+      customUploadImg, // 新增
     };
   },
 });
