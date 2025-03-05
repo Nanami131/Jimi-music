@@ -6,11 +6,14 @@ import com.example.jimi.annotation.AutoFill;
 import com.example.jimi.common.R;
 import com.example.jimi.controller.MinioUploadController;
 import com.example.jimi.enumeration.OperationType;
+import com.example.jimi.mapper.BannerMapper;
 import com.example.jimi.mapper.SongListMapper;
+import com.example.jimi.model.domain.Banner;
 import com.example.jimi.model.domain.SongList;
 import com.example.jimi.model.request.SongListRequest;
 import com.example.jimi.service.SongListService;
 import com.example.jimi.utils.FileNameUtils;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,8 @@ public class SongListServiceImpl extends ServiceImpl<SongListMapper, SongList> i
     @Autowired
     private SongListMapper songListMapper;
 
+    @Autowired
+    private BannerMapper bannerMapper;
     @AutoFill(OperationType.UPDATE)
     @Override
     public R updateSongListMsg(SongListRequest updateSongListRequest) {
@@ -97,9 +102,18 @@ public class SongListServiceImpl extends ServiceImpl<SongListMapper, SongList> i
         SongList songList = new SongList();
         songList.setId(id);
         songList.setPic("/user01"+fileName);
-        String s = MinioUploadController.uploadImgFile(avatorFile,fileName);
 
+        String s = MinioUploadController.uploadImgFile(avatorFile,fileName);
         if (s.equals("File uploaded successfully!") && songListMapper.updateById(songList) > 0) {
+
+            QueryWrapper<Banner> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("pic","/user01"+fileName);
+            if (bannerMapper.selectList(queryWrapper).isEmpty()){
+                int idx=(int) (Math.random() * 8) + 1;
+                Banner banner=new Banner().setPic("/user01"+fileName).setUrl("/song-sheet-detail/"+id).setId(idx);
+                bannerMapper.updateById(banner);
+            }
+
             return R.success("上传成功", fileName);
         } else {
             return R.error("上传失败");

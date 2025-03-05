@@ -1,6 +1,7 @@
 package com.example.jimi.model.domain;
 
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 import java.io.Serializable;
 
@@ -8,7 +9,9 @@ import java.io.Serializable;
  * 
  * @TableName banner
  */
+
 @Data
+@Accessors(chain = true) // 启用链式编程支持
 public class Banner implements Serializable {
     /**
      * 
@@ -19,6 +22,8 @@ public class Banner implements Serializable {
      * 
      */
     private String pic;
+
+    private String url;
 
     private static final long serialVersionUID = 1L;
 
