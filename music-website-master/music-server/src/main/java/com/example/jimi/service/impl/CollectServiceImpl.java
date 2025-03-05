@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.jimi.annotation.UserPermissionCheck;
 import com.example.jimi.common.R;
+import com.example.jimi.handler.ConsumerDTOHandler;
 import com.example.jimi.mapper.CollectMapper;
 import com.example.jimi.model.domain.Collect;
 import com.example.jimi.model.request.CollectRequest;
@@ -42,9 +43,12 @@ public class CollectServiceImpl extends ServiceImpl<CollectMapper, Collect> impl
         }
     }
 
-    @UserPermissionCheck(fieldName = "userId")
+
     @Override
     public R deleteCollect(Integer userId, Integer songId) {
+        if(ConsumerDTOHandler.getConsumerInfo().getId()!=userId){
+            return R.error("取消收藏失败");
+        }
         QueryWrapper<Collect> queryWrapper = new QueryWrapper();
         queryWrapper.eq("user_id",userId);
         queryWrapper.eq("song_id",songId);
