@@ -128,7 +128,7 @@ public class MinioUploadController {
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
-                            .object("/img/avatorImages/"+name)
+                            .object(name)
                             .stream(inputStream, inputStream.available(), -1)
                             .contentType(file.getContentType())
                             .build()

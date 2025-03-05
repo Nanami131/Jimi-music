@@ -78,7 +78,7 @@ public class R {
     public static R error(String message) {
         return success(message)
                 .setSuccess(false)
-                .setType("RetTypeConstants.RESULT_ERROR");
+                .setType(RetTypeConstants.RESULT_ERROR);
     }
 
     /**

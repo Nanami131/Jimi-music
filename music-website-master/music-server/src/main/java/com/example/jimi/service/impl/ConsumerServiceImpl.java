@@ -14,6 +14,7 @@ import com.example.jimi.model.domain.ConsumerDTO;
 import com.example.jimi.model.request.ConsumerRequest;
 import com.example.jimi.service.ConsumerService;
 
+import com.example.jimi.utils.FileNameUtils;
 import com.example.jimi.utils.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -168,15 +169,15 @@ public class ConsumerServiceImpl extends ServiceImpl<ConsumerMapper, Consumer>
     @Override
     public R updateUserAvator(MultipartFile avatorFile, int id) {
         String originalFilename = avatorFile.getOriginalFilename();
-        String timestamp = new SimpleDateFormat("yyyyMMddHHmmssSSS").format(new Date());
-        String fileName = timestamp + RandomUtils.code() + id + originalFilename.substring(originalFilename.lastIndexOf("."));
-        String imgPath = "/img/avatorImages/" + fileName;
+
+        String fileName= FileNameUtils.defineNamePath(originalFilename,"/img/avatorImages/",id);
         Consumer consumer = new Consumer();
+
         consumer.setId(id);
-        consumer.setAvator(imgPath);
+        consumer.setAvator(fileName);
         String s = MinioUploadController.uploadAtorImgFile(avatorFile,fileName);
         if (s.equals("File uploaded successfully!") && consumerMapper.updateById(consumer) > 0) {
-            return R.success("上传成功", imgPath);
+            return R.success("上传成功", fileName);
         } else {
             return R.error("上传失败");
         }
