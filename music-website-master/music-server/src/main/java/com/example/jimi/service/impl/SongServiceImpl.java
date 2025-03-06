@@ -5,16 +5,21 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.jimi.common.R;
 import com.example.jimi.controller.MinioUploadController;
 import com.example.jimi.mapper.SongMapper;
+import com.example.jimi.model.domain.Singer;
 import com.example.jimi.model.domain.Song;
 import com.example.jimi.model.request.SongRequest;
 import com.example.jimi.service.SongService;
 import com.example.jimi.utils.FileNameUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.minio.MinioClient;
 import io.minio.RemoveObjectArgs;
 import io.minio.errors.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,6 +28,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements SongService {
@@ -35,6 +41,12 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
 
     @Autowired
     MinioClient minioClient;
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public R allSong() {
@@ -195,16 +207,48 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements So
 
     @Override
     public R songOfSingerId(Integer singerId) {
+        String key =stringRedisTemplate.opsForValue().get("song:singerId:"+singerId);
+        if(key!=null){
+            try {
+                List<Song> songs=objectMapper.readValue(key, new TypeReference<List<Song>>(){});
+                return R.success("走了缓存",songs);
+            } catch (JsonProcessingException e) {
+                return R.error(e.getMessage());
+            }
+        }
         QueryWrapper<Song> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("singer_id",singerId);
-        return R.success(null, songMapper.selectList(queryWrapper));
+        List<Song> songs = songMapper.selectList(queryWrapper);
+        try {
+            stringRedisTemplate.opsForValue().set("song:singerId:"+singerId,
+                    objectMapper.writeValueAsString(songs),5, TimeUnit.MINUTES);
+        } catch (JsonProcessingException e) {
+            log.error("缓存建立失败: {}",  e);
+        }
+        return R.success("没有走缓存", songs);
     }
 
     @Override
     public R songOfId(Integer id) {
+        String key =stringRedisTemplate.opsForValue().get("song:id:"+id);
+        if(key!=null){
+            try {
+                List<Song> songs=objectMapper.readValue(key, new TypeReference<List<Song>>(){});
+                return R.success("走了缓存",songs);
+            } catch (JsonProcessingException e) {
+                return R.error(e.getMessage());
+            }
+        }
         QueryWrapper<Song> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("id",id);
-        return R.success(null, songMapper.selectList(queryWrapper));
+        List<Song> songs = songMapper.selectList(queryWrapper);
+        try {
+            stringRedisTemplate.opsForValue().set("song:id:"+id,
+                        objectMapper.writeValueAsString(songs),5, TimeUnit.MINUTES);
+        } catch (JsonProcessingException e) {
+            log.error("缓存建立失败: {}",  e);
+        }
+        return R.success("没有走缓存", songs);
     }
 
     @Override
