@@ -31,6 +31,8 @@ const HttpManager = {
   // 返回歌单里指定歌单ID的歌曲
   getListSongOfSongId: (songListId) => get(`listSong/detail?songListId=${songListId}`),
 
+  getSongListDetail: (id) => get(`/songList/detail?id=${id}`),
+
   // =======================> 歌手 API  完成
   // 返回所有歌手
   getAllSinger: () => get("singer"),

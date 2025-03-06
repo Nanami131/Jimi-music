@@ -25,4 +25,6 @@ public interface SongListService extends IService<SongList> {
     R likeTitle(String title);
 
     R likeStyle(String style);
+
+    R getSongListById(int id);
 }

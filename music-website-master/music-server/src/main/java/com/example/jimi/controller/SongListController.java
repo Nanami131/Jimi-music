@@ -58,4 +58,10 @@ public class SongListController {
 
         return songListService.updateSongListImg(avatorFile,id);
     }
+
+    // 新增：根据 ID 获取单个歌单详情
+    @GetMapping("/songList/detail")
+    public R getSongListDetail(@RequestParam("id") int id) {
+        return songListService.getSongListById(id);
+    }
 }

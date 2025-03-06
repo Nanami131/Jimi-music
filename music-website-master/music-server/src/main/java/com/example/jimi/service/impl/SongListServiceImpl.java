@@ -82,6 +82,13 @@ public class SongListServiceImpl extends ServiceImpl<SongListMapper, SongList> i
     }
 
     @Override
+    public R getSongListById(int id) {
+        QueryWrapper<SongList> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("id",id);
+        return R.success(null, songListMapper.selectList(queryWrapper));
+    }
+
+    @Override
     public R addSongList(SongListRequest addSongListRequest) {
         SongList songList = new SongList();
         BeanUtils.copyProperties(addSongListRequest, songList);
