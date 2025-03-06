@@ -80,7 +80,7 @@ public class SongListServiceImpl extends ServiceImpl<SongListMapper, SongList> i
 
     @Override
     public R likeTitle(String title) {
-        String key =stringRedisTemplate.opsForValue().get("songlist:search:"+title);
+        String key =stringRedisTemplate.opsForValue().get("songlist:title:"+title);
         if(key!=null){
             try {
                 List<SongList> songLists=objectMapper.readValue(key, new TypeReference<List<SongList>>(){});
@@ -93,7 +93,7 @@ public class SongListServiceImpl extends ServiceImpl<SongListMapper, SongList> i
         queryWrapper.like("title",title);
         List<SongList> songLists = songListMapper.selectList(queryWrapper);
         try {
-            stringRedisTemplate.opsForValue().set("songlist:search:"+title,
+            stringRedisTemplate.opsForValue().set("songlist:title:"+title,
                     objectMapper.writeValueAsString(songLists),5, TimeUnit.MINUTES);
         } catch (JsonProcessingException e) {
             log.error("缓存建立失败: {}",  e);
