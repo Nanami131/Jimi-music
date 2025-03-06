@@ -13,6 +13,9 @@ import com.example.jimi.model.domain.SongList;
 import com.example.jimi.model.request.SongListRequest;
 import com.example.jimi.service.SongListService;
 import com.example.jimi.utils.FileNameUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class SongListServiceImpl extends ServiceImpl<SongListMapper, SongList> implements SongListService {
@@ -34,6 +38,9 @@ public class SongListServiceImpl extends ServiceImpl<SongListMapper, SongList> i
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
     @AutoFill(OperationType.UPDATE)
     @Override
     public R updateSongListMsg(SongListRequest updateSongListRequest) {
@@ -73,9 +80,25 @@ public class SongListServiceImpl extends ServiceImpl<SongListMapper, SongList> i
 
     @Override
     public R likeTitle(String title) {
+        String key =stringRedisTemplate.opsForValue().get("songlist:search:"+title);
+        if(key!=null){
+            try {
+                List<SongList> songLists=objectMapper.readValue(key, new TypeReference<List<SongList>>(){});
+                return R.success("走了缓存",songLists);
+            } catch (JsonProcessingException e) {
+                return R.error(e.getMessage());
+            }
+        }
         QueryWrapper<SongList> queryWrapper = new QueryWrapper<>();
         queryWrapper.like("title",title);
-        return R.success(null, songListMapper.selectList(queryWrapper));
+        List<SongList> songLists = songListMapper.selectList(queryWrapper);
+        try {
+            stringRedisTemplate.opsForValue().set("songlist:search:"+title,
+                    objectMapper.writeValueAsString(songLists),5, TimeUnit.MINUTES);
+        } catch (JsonProcessingException e) {
+            log.error("缓存建立失败: {}",  e);
+        }
+        return R.success("没有走缓存", songLists);
     }
 
     @Override

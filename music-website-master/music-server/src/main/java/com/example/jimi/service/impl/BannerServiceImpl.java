@@ -14,6 +14,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 
 @Service
@@ -30,10 +31,10 @@ public class BannerServiceImpl extends ServiceImpl<BannerMapper, Banner>
     private ObjectMapper objectMapper;
     @Override
     public R getAllBanner() {
-        String s = stringRedisTemplate.opsForValue().get("banner:all");
-        if(s!=null){
+        String key = stringRedisTemplate.opsForValue().get("banner:all");
+        if(key!=null){
             try {
-                List<Banner> banners = objectMapper.readValue(s, new TypeReference<List<Banner>>() {});
+                List<Banner> banners = objectMapper.readValue(key, new TypeReference<List<Banner>>() {});
                 return R.success("走了缓存",banners);
             } catch (JsonProcessingException e) {
                 return R.error(e.getMessage());
@@ -41,9 +42,9 @@ public class BannerServiceImpl extends ServiceImpl<BannerMapper, Banner>
         }
         List<Banner> banners = bannerMapper.selectList(null);
         try {
-            stringRedisTemplate.opsForValue().set("banner:all", objectMapper.writeValueAsString(banners));
+            stringRedisTemplate.opsForValue().set("banner:all", objectMapper.writeValueAsString(banners),30, TimeUnit.MINUTES);
         } catch (JsonProcessingException e) {
-            return R.error(e.getMessage());
+            log.error("缓存建立失败: {}",  e);
         }
         return R.success("没有走缓存",banners);
     }
