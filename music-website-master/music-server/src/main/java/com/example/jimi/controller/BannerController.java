@@ -17,6 +17,6 @@ public class BannerController {
 
     @GetMapping("/getAllBanner")
     public R getAllBanner(){
-        return R.success("成功获取轮播图与",bannerService.getAllBanner());
+        return bannerService.getAllBanner();
     }
 }
