@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.jimi.mapper.CommentMapper">
-  <resultMap id="BaseResultMap" type="com.example.jimi.model.domain.Comment">
+
+  <!-- 基本结果映射 -->
+  <resultMap id="CommentWithUserResultMap" type="com.example.jimi.model.domain.Comment">
     <id column="id" property="id" jdbcType="INTEGER" />
     <result column="user_id" property="userId" jdbcType="INTEGER" />
     <result column="song_id" property="songId" jdbcType="INTEGER" />
@@ -10,9 +12,38 @@
     <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
     <result column="type" property="type" jdbcType="TINYINT" />
     <result column="up" property="up" jdbcType="INTEGER" />
+    <!-- 冗余字段映射 -->
+    <result column="username" property="username" jdbcType="VARCHAR" />
+    <result column="avator" property="avator" jdbcType="VARCHAR" />
   </resultMap>
-  <sql id="Base_Column_List">
-    id, user_id, song_id, song_list_id, content, create_time, type, up
-  </sql>
+
+  <!-- 分页查询歌单评论 -->
+  <select id="selectCommentsWithUser" resultMap="CommentWithUserResultMap">
+    SELECT c.*, u.username, u.avator
+    FROM comment c
+           LEFT JOIN consumer u ON c.user_id = u.id
+    WHERE c.song_list_id = #{songListId}
+  </select>
+
+  <!-- 分页查询歌曲评论 -->
+  <select id="selectCommentsWithUserBySongId" resultMap="CommentWithUserResultMap">
+    SELECT c.*, u.username, u.avator
+    FROM comment c
+           LEFT JOIN consumer u ON c.user_id = u.id
+    WHERE c.song_id = #{songId}
+  </select>
+
+  <!-- 点赞信息 -->
+  <select id="selectSupportsByIds" resultType="com.example.jimi.model.domain.CommentSupport">
+    SELECT id, up
+    FROM comment
+    WHERE id IN
+    <foreach item="id" collection="commentIds" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+    <if test="commentIds == null or commentIds.size() == 0">
+      WHERE id = -1  <!-- 或者其他默认条件，避免返回空结果 -->
+    </if>
+  </select>
 
 </mapper>

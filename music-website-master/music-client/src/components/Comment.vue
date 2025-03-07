@@ -80,11 +80,20 @@ onMounted(() => {
 // 获取分页评论
 async function getComment(id) {
   try {
-    const result = (await HttpManager.getAllComment(type.value, id, currentPage.value, pageSize)) as ResponseBody;
-    commentList.value = result.data.records; // 直接使用后端返回的数据
-    total.value = result.data.total;
+    // 先获取评论数据
+    const commentResult = await HttpManager.getAllComment(type.value, id, currentPage.value, pageSize);
+    commentList.value = commentResult.data.records;
+    total.value = commentResult.data.total;
+
+    // 只有当评论列表非空时才获取点赞信息
+    if (commentList.value.length > 0) {
+      const commentIds = commentList.value.map(c => c.id);
+      const supportResult = await HttpManager.getCommentSupports(commentIds);
+      const supportMap = new Map(supportResult.data.map(s => [s.id, s.up]));
+      commentList.value.forEach(c => c.up = supportMap.get(c.id) || c.up);
+    }
   } catch (error) {
-    console.error('[获取分页评论失败]===>', error);
+    console.error('[获取评论或点赞信息失败]===>', error);
   }
 }
 

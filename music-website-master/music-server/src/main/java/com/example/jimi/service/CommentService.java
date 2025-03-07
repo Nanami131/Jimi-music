@@ -6,6 +6,8 @@ import com.example.jimi.model.domain.Comment;
 import com.example.jimi.model.request.CommentRequest;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.List;
+
 public interface CommentService extends IService<Comment> {
 
     R addComment(CommentRequest addCommentRequest);
@@ -18,4 +20,5 @@ public interface CommentService extends IService<Comment> {
 
     R commentOfSongListId(Integer songListId, Integer pageNum, Integer pageSize);
 
+    R getCommentSupports(List<Integer> commentIds);
 }

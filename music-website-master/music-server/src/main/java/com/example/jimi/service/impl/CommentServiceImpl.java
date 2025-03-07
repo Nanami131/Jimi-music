@@ -10,6 +10,7 @@ import com.example.jimi.common.R;
 import com.example.jimi.enumeration.OperationType;
 import com.example.jimi.mapper.CommentMapper;
 import com.example.jimi.model.domain.Comment;
+import com.example.jimi.model.domain.CommentSupport;
 import com.example.jimi.model.domain.Singer;
 import com.example.jimi.model.request.CommentRequest;
 import com.example.jimi.service.CommentService;
@@ -116,5 +117,11 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
             log.error("缓存建立失败: {}",  e);
         }
         return R.success("没有走缓存", commentIPage);
+    }
+
+    @Override
+    public R getCommentSupports(List<Integer> commentIds) {
+        List<CommentSupport> supports = commentMapper.selectSupportsByIds(commentIds);
+        return R.success("查询点赞信息成功", supports);
     }
 }

@@ -75,6 +75,10 @@ const HttpManager = {
     return get(url);
   },
 
+  // 查询评论点赞情况
+  getCommentSupports: (commentIds) => {
+    return post('/comment/supports', commentIds);
+  },
   // =======================> 歌曲 API
   // 返回指定歌曲ID的歌曲
   getSongOfId: (id) => get(`song/detail?id=${id}`),

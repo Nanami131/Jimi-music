@@ -6,6 +6,8 @@ import com.example.jimi.service.CommentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 public class CommentController {
     @Autowired
@@ -40,6 +42,10 @@ public class CommentController {
         return commentService.commentOfSongListId(songListId, pageNum, pageSize);
     }
 
+    @PostMapping("/comment/supports")
+    public R getCommentSupports(@RequestBody List<Integer> commentIds) {
+        return commentService.getCommentSupports(commentIds);
+    }
 
     // 点赞
     @PostMapping("/comment/like")
