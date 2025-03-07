@@ -154,9 +154,18 @@ import { Icon, RouterName } from "@/enums";
 import { HttpManager } from "@/api";
 import { parseLyric } from "@/utils";
 import YinDelDialog from "@/components/dialog/YinDelDialog.vue";
-import axios from "axios"; // 引入 axios
+import { post, getBaseURL } from "@/api/request"; // 正确导入
+
+interface ResponseBody {
+  code: number;
+  message: string;
+  type?: string;
+  success?: boolean;
+  data: any;
+}
 
 export default defineComponent({
+  name: "Song",
   components: {
     YinDelDialog,
   },
@@ -165,35 +174,29 @@ export default defineComponent({
     const { routerManager, beforeImgUpload, beforeSongUpload } = mixin();
     const store = useStore();
 
-    const tableData = ref([]); // 记录歌曲，用于显示
-    const tempDate = ref([]); // 记录歌曲，用于搜索时能临时记录一份歌曲列表
-    const pageSize = ref(5); // 页数
-    const currentPage = ref(1); // 当前页
-    const singerId = ref("");
-    const singerName = ref("");
-    const toggle = ref(false); // 控制播放图标状态
+    const tableData = ref<any[]>([]);
+    const tempDate = ref<any[]>([]);
+    const pageSize = ref(5);
+    const currentPage = ref(1);
+    const singerId = ref<string>("");
+    const singerName = ref<string>("");
+    const toggle = ref<string | boolean>(false);
     const BOFANG = ref(Icon.BOFANG);
     const ZANTING = ref(Icon.ZANTING);
     const breadcrumbList = computed(() => store.getters.breadcrumbList);
 
-    const isPlay = computed(() => store.getters.isPlay); // 播放状态
-    const playIcon = computed(() => (isPlay.value ? ZANTING.value : BOFANG.value)); // 播放状态
-    // 计算当前表格中的数据
+    const isPlay = computed(() => store.getters.isPlay);
+    const playIcon = computed(() => (isPlay.value ? ZANTING.value : BOFANG.value));
     const data = computed(() => {
       return tableData.value.slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value);
     });
 
-    const searchWord = ref(""); // 记录输入框输入的内容
+    const searchWord = ref("");
     watch(searchWord, () => {
       if (searchWord.value === "") {
         tableData.value = tempDate.value;
       } else {
-        tableData.value = [];
-        for (let item of tempDate.value) {
-          if (item.name.includes(searchWord.value)) {
-            tableData.value.push(item);
-          }
-        }
+        tableData.value = tempDate.value.filter(item => item.name.includes(searchWord.value));
       }
     });
 
@@ -202,46 +205,47 @@ export default defineComponent({
     proxy.$store.commit("setIsPlay", false);
     getData();
 
-    // 获取歌曲
     async function getData() {
-      tableData.value = [];
-      tempDate.value = [];
-      const result = (await HttpManager.getSongOfSingerId(singerId.value)) as ResponseBody;
-      tableData.value = result.data;
-      tempDate.value = result.data;
-      currentPage.value = 1;
-    }
-    function setSongUrl(row) {
-      proxy.$store.commit("setUrl", row.url);
-      toggle.value = row.name;
-      if (isPlay.value) {
-        proxy.$store.commit("setIsPlay", false);
-      } else {
-        proxy.$store.commit("setIsPlay", true);
+      try {
+        tableData.value = [];
+        tempDate.value = [];
+        const result = (await HttpManager.getSongOfSingerId(singerId.value)) as ResponseBody;
+        tableData.value = result.data;
+        tempDate.value = result.data;
+        currentPage.value = 1;
+      } catch (error) {
+        console.error("Failed to fetch song data:", error);
       }
     }
-    // 更新歌曲图片
-    function updateSongImg(id) {
+
+    function setSongUrl(row: any) {
+      proxy.$store.commit("setUrl", row.url);
+      toggle.value = row.name;
+      proxy.$store.commit("setIsPlay", !isPlay.value);
+    }
+
+    function updateSongImg(id: string) {
       return HttpManager.updateSongImg(id);
     }
-    function updateSongUrl(id) {
+    function updateSongUrl(id: string) {
       return HttpManager.updateSongUrl(id);
     }
-    function updateSongLrc(id) {
+    function updateSongLrc(id: string) {
       return HttpManager.updateSongLrc(id);
     }
-    // 获取当前页
-    function handleCurrentChange(val) {
+
+    function handleCurrentChange(val: number) {
       currentPage.value = val;
     }
-    function handleSongSuccess(res) {
+
+    function handleSongSuccess(res: ResponseBody) {
       (proxy as any).$message({
         message: res.message,
         type: res.type,
       });
       if (res.success) getData();
     }
-    function handleImgSuccess(res) {
+    function handleImgSuccess(res: ResponseBody) {
       (proxy as any).$message({
         message: res.message,
         type: res.type,
@@ -249,90 +253,70 @@ export default defineComponent({
       if (res.success) getData();
     }
 
-    // 自定义上传方法
-    function customUploadImg(options) {
+    async function customUploadImg(options: any) {
       const formData = new FormData();
       formData.append("file", options.file);
-      axios.post(options.action, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        withCredentials: true, // 携带 Cookie
-        onUploadProgress: options.onProgress,
-      }).then(response => {
-        console.log("Image upload success:", response.data);
-        options.onSuccess(response.data);
-      }).catch(error => {
-        console.error("Image upload error:", error.response || error);
+      try {
+        console.log("Uploading image to:", options.action);
+        const relativeUrl = options.action.replace(getBaseURL(), ""); // 修正为 getBaseURL
+        const response = await post(relativeUrl, formData);
+        console.log("Image upload success:", response);
+        options.onSuccess(response);
+      } catch (error) {
+        console.error("Image upload error:", error);
+        if (error.status === 401) {
+          (proxy as any).$message.error("未授权，请重新登录！");
+        }
         options.onError(error);
-      });
+      }
     }
 
-    function customUploadSong(options) {
+    async function customUploadSong(options: any) {
       const formData = new FormData();
       formData.append("file", options.file);
-      axios.post(options.action, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        withCredentials: true, // 携带 Cookie
-        onUploadProgress: options.onProgress,
-      }).then(response => {
-        console.log("Song upload success:", response.data);
-        options.onSuccess(response.data);
-      }).catch(error => {
-        console.error("Song upload error:", error.response || error);
+      try {
+        console.log("Uploading song to:", options.action);
+        const relativeUrl = options.action.replace(getBaseURL(), "");
+        const response = await post(relativeUrl, formData);
+        console.log("Song upload success:", response);
+        options.onSuccess(response);
+      } catch (error) {
+        console.error("Song upload error:", error);
+        if (error.status === 401) {
+          (proxy as any).$message.error("未授权，请重新登录！");
+        }
         options.onError(error);
-      });
+      }
     }
 
-    function customUploadLrc(options) {
+    async function customUploadLrc(options: any) {
       const formData = new FormData();
       formData.append("file", options.file);
-      axios.post(options.action, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        withCredentials: true, // 携带 Cookie
-        onUploadProgress: options.onProgress,
-      }).then(response => {
-        console.log("Lyric upload success:", response.data);
-        options.onSuccess(response.data);
-      }).catch(error => {
-        console.error("Lyric upload error:", error.response || error);
+      try {
+        console.log("Uploading lyric to:", options.action);
+        const relativeUrl = options.action.replace(getBaseURL(), "");
+        const response = await post(relativeUrl, formData);
+        console.log("Lyric upload success:", response);
+        options.onSuccess(response);
+      } catch (error) {
+        console.error("Lyric upload error:", error);
+        if (error.status === 401) {
+          (proxy as any).$message.error("未授权，请重新登录！");
+        }
         options.onError(error);
-      });
+      }
     }
 
-    /**
-     * 路由
-     */
-    function goCommentPage(id) {
+    function goCommentPage(id: string) {
       const breadcrumbList = reactive([
-        {
-          path: RouterName.Singer,
-          name: "歌手管理",
-        },
-        {
-          path: RouterName.Song,
-          query: {
-            id: singerId.value,
-            name: singerName.value,
-          },
-          name: "歌曲信息",
-        },
-        {
-          path: "",
-          name: "评论详情",
-        },
+        { path: RouterName.Singer, name: "歌手管理" },
+        { path: RouterName.Song, query: { id: singerId.value, name: singerName.value }, name: "歌曲信息" },
+        { path: "", name: "评论详情" },
       ]);
       proxy.$store.commit("setBreadcrumbList", breadcrumbList);
       routerManager(RouterName.Comment, { path: RouterName.Comment, query: { id, type: 0 } });
     }
 
-    /**
-     * 添加
-     */
     const centerDialogVisible = ref(false);
     const registerForm = reactive({
       name: "",
@@ -341,41 +325,34 @@ export default defineComponent({
       lyric: "",
     });
 
-    function addSong() {
+    async function addSong() {
       const addSongForm = new FormData(document.getElementById("add-song") as HTMLFormElement);
       addSongForm.append("singerId", singerId.value);
       addSongForm.set("name", addSongForm.get("name"));
       if (!addSongForm.get("lyric")) addSongForm.set("lyric", "[00:00:00]暂无歌词");
 
-      const req = new XMLHttpRequest();
-      req.onreadystatechange = () => {
-        if (req.readyState === 4 && req.status === 200) {
-          let res = JSON.parse(req.response);
-          (proxy as any).$message({
-            message: res.message,
-            type: res.type,
-          });
-          if (res.success) {
-            getData();
-            registerForm.name = "";
-            registerForm.singerName = "";
-            registerForm.introduction = "";
-            registerForm.lyric = "";
-          }
+      try {
+        const res = await post(`/song/add`, addSongForm);
+        (proxy as any).$message({
+          message: res.message,
+          type: res.type,
+        });
+        if (res.success) {
+          getData();
+          registerForm.name = "";
+          registerForm.singerName = "";
+          registerForm.introduction = "";
+          registerForm.lyric = "";
         }
-      };
-      console.log(registerForm.name);
-      console.log(registerForm.singerName);
-      console.log(registerForm.introduction);
-      console.log(registerForm.lyric);
-      req.open("post", HttpManager.attachImageUrl(`/song/add`), false);
-      req.send(addSongForm);
+      } catch (error) {
+        console.error("Add song error:", error);
+        if (error.status === 401) {
+          (proxy as any).$message.error("未授权，请重新登录！");
+        }
+      }
       centerDialogVisible.value = false;
     }
 
-    /**
-     * 编辑
-     */
     const editVisible = ref(false);
     const editForm = reactive({
       id: "",
@@ -389,59 +366,56 @@ export default defineComponent({
       url: "",
     });
 
-    function editRow(row) {
+    function editRow(row: any) {
       idx.value = row.id;
-      editForm.id = row.id;
-      editForm.singerId = row.singerId;
-      editForm.name = row.name;
-      editForm.introduction = row.introduction;
-      editForm.createTime = row.createTime;
-      editForm.updateTime = row.updateTime;
-      editForm.pic = row.pic;
-      editForm.lyric = row.lyric;
-      editForm.url = row.url;
+      Object.assign(editForm, row);
       editVisible.value = true;
     }
+
     async function saveEdit() {
-      let id = editForm.id;
-      let singerId = editForm.singerId;
-      let name = editForm.name;
-      let introduction = editForm.introduction;
-      let lyric = editForm.lyric;
-      const result = (await HttpManager.updateSongMsg({ id, singerId, name, introduction, lyric })) as ResponseBody;
-      (proxy as any).$message({
-        message: result.message,
-        type: result.type,
-      });
-      if (result.success) getData();
-      editVisible.value = false;
+      const { id, singerId, name, introduction, lyric } = editForm;
+      try {
+        const result = (await HttpManager.updateSongMsg({ id, singerId, name, introduction, lyric })) as ResponseBody;
+        (proxy as any).$message({
+          message: result.message,
+          type: result.type,
+        });
+        if (result.success) getData();
+        editVisible.value = false;
+      } catch (error) {
+        console.error("Failed to update song:", error);
+      }
     }
 
-    /**
-     * 删除
-     */
-    const idx = ref(-1); // 记录当前要删除的行
-    const multipleSelection = ref([]); // 记录当前要删除的列表
-    const delVisible = ref(false); // 显示删除框
+    const idx = ref(-1);
+    const multipleSelection = ref<any[]>([]);
+    const delVisible = ref(false);
 
     async function confirm() {
-      const result = (await HttpManager.deleteSong(idx.value)) as ResponseBody;
-      (proxy as any).$message({
-        message: result.message,
-        type: result.type,
-      });
-      if (result.success) getData();
-      delVisible.value = false;
+      try {
+        const result = (await HttpManager.deleteSong(idx.value)) as ResponseBody;
+        (proxy as any).$message({
+          message: result.message,
+          type: result.type,
+        });
+        if (result.success) getData();
+        delVisible.value = false;
+      } catch (error) {
+        console.error("Failed to delete song:", error);
+      }
     }
-    function deleteRow(id) {
+
+    function deleteRow(id: number) {
       idx.value = id;
       delVisible.value = true;
     }
-    function handleSelectionChange(val) {
+
+    function handleSelectionChange(val: any[]) {
       multipleSelection.value = val;
     }
+
     function deleteAll() {
-      for (let item of multipleSelection.value) {
+      for (const item of multipleSelection.value) {
         deleteRow(item.id);
         confirm();
       }
@@ -482,9 +456,9 @@ export default defineComponent({
       handleSongSuccess,
       setSongUrl,
       goCommentPage,
-      customUploadImg, // 新增
-      customUploadSong, // 新增
-      customUploadLrc, // 新增
+      customUploadImg,
+      customUploadSong,
+      customUploadLrc,
     };
   },
 });
