@@ -10,17 +10,30 @@ import com.example.jimi.common.R;
 import com.example.jimi.enumeration.OperationType;
 import com.example.jimi.mapper.CommentMapper;
 import com.example.jimi.model.domain.Comment;
+import com.example.jimi.model.domain.Singer;
 import com.example.jimi.model.request.CommentRequest;
 import com.example.jimi.service.CommentService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> implements CommentService {
     @Autowired
     private CommentMapper commentMapper;
 
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
     @AutoFill(OperationType.INSERT)
     @UserPermissionCheck(fieldName = "userId")
     @Override
@@ -63,15 +76,45 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
 
     @Override
     public R commentOfSongListId(Integer songListId, Integer pageNum, Integer pageSize) {
+        String key =stringRedisTemplate.opsForValue().get("comment:songlist:"+songListId+":"+pageNum);
+        if(key!=null){
+            try {
+                IPage<Comment> commentIPage=objectMapper.readValue(key, new TypeReference<Page<Comment>>(){});
+                return R.success("走了缓存",commentIPage);
+            } catch (JsonProcessingException e) {
+                return R.error(e.getMessage());
+            }
+        }
         Page<Comment> page = new Page<>(pageNum, pageSize);
-        IPage<Comment> commentIPage = commentMapper.selectCommentsWithUser(page, songListId);
-        return R.success("分页查询", commentIPage);
+        Page<Comment> commentIPage = (Page<Comment>) commentMapper.selectCommentsWithUser(page, songListId);
+        try {
+            stringRedisTemplate.opsForValue().set("comment:songlist:"+songListId+":"+pageNum,
+                    objectMapper.writeValueAsString(commentIPage),20, TimeUnit.MINUTES);
+        } catch (JsonProcessingException e) {
+            log.error("缓存建立失败: {}",  e);
+        }
+        return R.success("没有走缓存",commentIPage);
     }
 
     @Override
     public R commentOfSongId(Integer songId, Integer pageNum, Integer pageSize) {
+        String key =stringRedisTemplate.opsForValue().get("comment:song:"+songId+":"+pageNum);
+        if(key!=null){
+            try {
+                IPage<Comment> commentIPage=objectMapper.readValue(key, new TypeReference<Page<Comment>>(){});
+                return R.success("走了缓存",commentIPage);
+            } catch (JsonProcessingException e) {
+                return R.error(e.getMessage());
+            }
+        }
         Page<Comment> page = new Page<>(pageNum, pageSize);
-        IPage<Comment> commentIPage = commentMapper.selectCommentsWithUserBySongId(page, songId);
-        return R.success("分页查询", commentIPage);
+        Page<Comment> commentIPage = (Page<Comment>) commentMapper.selectCommentsWithUserBySongId(page, songId);
+        try {
+            stringRedisTemplate.opsForValue().set("comment:song:"+songId+":"+pageNum,
+                    objectMapper.writeValueAsString(commentIPage),20, TimeUnit.MINUTES);
+        } catch (JsonProcessingException e) {
+            log.error("缓存建立失败: {}",  e);
+        }
+        return R.success("没有走缓存", commentIPage);
     }
 }
