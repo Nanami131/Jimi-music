@@ -62,22 +62,16 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     }
 
     @Override
-    public R commentOfSongId(Integer songId, Integer pageNum, Integer pageSize) {
-        QueryWrapper<Comment> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("song_id",songId);
-        Page<Comment> page =new Page<>(pageNum,pageSize);
-        IPage<Comment> commentIPage= commentMapper.selectPage(page,queryWrapper);
-        return R.success("分页查询",commentIPage);
+    public R commentOfSongListId(Integer songListId, Integer pageNum, Integer pageSize) {
+        Page<Comment> page = new Page<>(pageNum, pageSize);
+        IPage<Comment> commentIPage = commentMapper.selectCommentsWithUser(page, songListId);
+        return R.success("分页查询", commentIPage);
     }
 
     @Override
-    public R commentOfSongListId(Integer songListId, Integer pageNum, Integer pageSize) {
-
-        QueryWrapper<Comment> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("song_list_id",songListId);
-        Page<Comment> page =new Page<>(pageNum,pageSize);
-
-        IPage<Comment> commentIPage= commentMapper.selectPage(page,queryWrapper);
-        return R.success("分页查询",commentIPage);
+    public R commentOfSongId(Integer songId, Integer pageNum, Integer pageSize) {
+        Page<Comment> page = new Page<>(pageNum, pageSize);
+        IPage<Comment> commentIPage = commentMapper.selectCommentsWithUserBySongId(page, songId);
+        return R.success("分页查询", commentIPage);
     }
 }

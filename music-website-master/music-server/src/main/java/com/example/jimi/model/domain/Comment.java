@@ -28,6 +28,10 @@ public class Comment {
     private Integer up;
 
 
+    // 冗余字段，携带用户信息
+    private String username;
+
+    private String avator;
     @Override
     public String toString() {
         return ToStringBuilder.reflectionToString(this);

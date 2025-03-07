@@ -26,7 +26,8 @@ public class CommentController {
 
     // 获得指定歌曲 ID 的评论列表
     @GetMapping("/comment/song/detail")
-    public R commentOfSongId(@RequestParam Integer songId,@RequestParam("pageNum") Integer pageNum,
+    public R commentOfSongId(@RequestParam Integer songId,
+                             @RequestParam("pageNum") Integer pageNum,
                              @RequestParam("pageSize") Integer pageSize) {
         return commentService.commentOfSongId(songId, pageNum, pageSize);
     }

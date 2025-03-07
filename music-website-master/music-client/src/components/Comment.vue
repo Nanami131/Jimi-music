@@ -81,14 +81,8 @@ onMounted(() => {
 async function getComment(id) {
   try {
     const result = (await HttpManager.getAllComment(type.value, id, currentPage.value, pageSize)) as ResponseBody;
-    commentList.value = result.data.records; // 当前页数据
-    total.value = result.data.total; // 总记录数
-
-    for (let index = 0; index < commentList.value.length; index++) {
-      const resultUser = (await HttpManager.getUserOfId(commentList.value[index].userId)) as ResponseBody;
-      commentList.value[index].avator = resultUser.data[0].avator;
-      commentList.value[index].username = resultUser.data[0].username;
-    }
+    commentList.value = result.data.records; // 直接使用后端返回的数据
+    total.value = result.data.total;
   } catch (error) {
     console.error('[获取分页评论失败]===>', error);
   }
