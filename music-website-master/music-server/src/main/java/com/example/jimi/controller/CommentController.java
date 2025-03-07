@@ -26,15 +26,19 @@ public class CommentController {
 
     // 获得指定歌曲 ID 的评论列表
     @GetMapping("/comment/song/detail")
-    public R commentOfSongId(@RequestParam Integer songId) {
-        return commentService.commentOfSongId(songId);
+    public R commentOfSongId(@RequestParam Integer songId,@RequestParam("pageNum") Integer pageNum,
+                             @RequestParam("pageSize") Integer pageSize) {
+        return commentService.commentOfSongId(songId, pageNum, pageSize);
     }
 
     // 获得指定歌单 ID 的评论列表
     @GetMapping("/comment/songList/detail")
-    public R commentOfSongListId(@RequestParam Integer songListId) {
-        return commentService.commentOfSongListId(songListId);
+    public R commentOfSongListId(@RequestParam("songListId") Integer songListId,
+                                 @RequestParam("pageNum") Integer pageNum,
+                                 @RequestParam("pageSize") Integer pageSize) {
+        return commentService.commentOfSongListId(songListId, pageNum, pageSize);
     }
+
 
     // 点赞
     @PostMapping("/comment/like")

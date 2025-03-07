@@ -65,12 +65,12 @@ const HttpManager = {
   // 点赞
   setSupport: ({id,up}) => post(`comment/like`, {id,up}),
   // 返回所有评论
-  getAllComment: (type, id) => {
+  getAllComment: (type, id, pageNum, pageSize) => {
     let url = "";
     if (type === 1) {
-      url = `comment/songList/detail?songListId=${id}`;
+      url = `comment/songList/detail?songListId=${id}&pageNum=${pageNum}&pageSize=${pageSize}`;
     } else if (type === 0) {
-      url = `comment/song/detail?songId=${id}`;
+      url = `comment/song/detail?songId=${id}&pageNum=${pageNum}&pageSize=${pageSize}`;
     }
     return get(url);
   },

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.jimi.common.R;
 import com.example.jimi.model.domain.Comment;
 import com.example.jimi.model.request.CommentRequest;
+import org.springframework.web.bind.annotation.RequestParam;
 
 public interface CommentService extends IService<Comment> {
 
@@ -13,8 +14,8 @@ public interface CommentService extends IService<Comment> {
 
     R deleteComment(Integer id);
 
-    R commentOfSongId(Integer songId);
+    R commentOfSongId(Integer songId,Integer pageNum, Integer pageSize);
 
-    R commentOfSongListId(Integer songListId);
+    R commentOfSongListId(Integer songListId, Integer pageNum, Integer pageSize);
 
 }

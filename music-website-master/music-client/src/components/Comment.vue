@@ -2,7 +2,7 @@
   <div class="comment">
     <h2 class="comment-title">
       <span>评论</span>
-      <span class="comment-desc">共 {{ commentList.length }} 条评论</span>
+      <span class="comment-desc">共 {{ total }} 条评论</span>
     </h2>
     <el-input class="comment-input" type="textarea" placeholder="期待您的精彩评论..." :rows="2" v-model="textarea" />
     <el-button class="sub-btn" type="primary" @click="submitComment()">发表评论</el-button>
@@ -17,17 +17,25 @@
           <li class="content">{{ item.content }}</li>
         </ul>
       </div>
-      <!--这特么是直接拿到了评论的id-->
       <div ref="up" class="comment-ctr" @click="setSupport(item.id, item.up, userId)">
         <div><yin-icon :icon="iconList.Support"></yin-icon> {{ item.up }}</div>
         <el-icon v-if="item.userId === userId" @click="deleteComment(item.id, index)"><delete /></el-icon>
       </div>
     </li>
   </ul>
+  <!-- 分页组件 -->
+  <el-pagination
+      class="pagination"
+      background
+      layout="prev, pager, next, total"
+      :total="total"
+      :page-size="pageSize"
+      :current-page="currentPage"
+      @current-change="handlePageChange"
+  />
 </template>
 
 <script lang="ts" setup>
-
 import { defineProps, getCurrentInstance, ref, toRefs, computed, watch, reactive, onMounted } from "vue";
 import { useStore } from "vuex";
 import { Delete } from "@element-plus/icons-vue";
@@ -42,8 +50,6 @@ const { proxy } = getCurrentInstance();
 const store = useStore();
 const { checkStatus } = mixin();
 
-
-
 const props = defineProps({
   playId: Number || String, // 歌曲ID 或 歌单ID
   type: Number, // 歌单 1 / 歌曲 0
@@ -51,7 +57,10 @@ const props = defineProps({
 
 const { playId, type } = toRefs(props);
 const textarea = ref(""); // 存放输入内容
-const commentList = ref([]); // 存放评论内容
+const commentList = ref([]); // 当前页评论内容
+const total = ref(0); // 总评论数
+const currentPage = ref(1); // 当前页码
+const pageSize = 20; // 每页大小，固定为20
 const iconList = reactive({
   Support: Icon.Support,
 });
@@ -60,6 +69,7 @@ const userId = computed(() => store.getters.userId);
 const songId = computed(() => store.getters.songId);
 
 watch(songId, () => {
+  currentPage.value = 1; // 重置页码
   getComment(songId.value);
 });
 
@@ -67,19 +77,20 @@ onMounted(() => {
   getComment(playId.value);
 });
 
-// 获取所有评论
+// 获取分页评论
 async function getComment(id) {
   try {
-    const result = (await HttpManager.getAllComment(type.value, id)) as ResponseBody;
-    commentList.value = result.data;
+    const result = (await HttpManager.getAllComment(type.value, id, currentPage.value, pageSize)) as ResponseBody;
+    commentList.value = result.data.records; // 当前页数据
+    total.value = result.data.total; // 总记录数
+
     for (let index = 0; index < commentList.value.length; index++) {
-      // 获取评论用户的昵称和头像
       const resultUser = (await HttpManager.getUserOfId(commentList.value[index].userId)) as ResponseBody;
       commentList.value[index].avator = resultUser.data[0].avator;
       commentList.value[index].username = resultUser.data[0].username;
     }
   } catch (error) {
-    console.error('[获取所有评论失败]===>', error);
+    console.error('[获取分页评论失败]===>', error);
   }
 }
 
@@ -87,7 +98,6 @@ async function getComment(id) {
 async function submitComment() {
   if (!checkStatus()) return;
 
-  // 0 代表歌曲， 1 代表歌单
   let songListId = null;
   let songId = null;
   let nowType = null;
@@ -108,7 +118,7 @@ async function submitComment() {
 
   if (result.success) {
     textarea.value = "";
-    await getComment(playId.value);
+    await getComment(playId.value); // 刷新当前页评论
   }
 }
 
@@ -120,37 +130,49 @@ async function deleteComment(id, index) {
     type: result.type,
   });
 
-  if (result.success) commentList.value.splice(index, 1);
+  if (result.success) {
+    commentList.value.splice(index, 1);
+    total.value -= 1; // 更新总数
+    // 如果当前页为空，自动跳转到上一页
+    if (commentList.value.length === 0 && currentPage.value > 1) {
+      currentPage.value -= 1;
+      await getComment(playId.value);
+    }
+  }
 }
 
-// 点赞  还得再查一下
+// 点赞
 async function setSupport(id, up, userId) {
   if (!checkStatus()) return;
 
   let result = null;
   let operatorR = null;
   const commentId = id;
-  //当然可以这么左 直接在判断的时候 进行点赞或者取消
   const r = (await HttpManager.testAlreadySupport({ commentId, userId })) as ResponseBody;
   (proxy as any).$message({
     message: r.message,
     type: r.type,
-    date: r.data,
   });
 
   if (r.data) {
-    up = up - 1;
+    up -= 1;
     operatorR = (await HttpManager.deleteUserSupport({ commentId, userId })) as ResponseBody;
     result = (await HttpManager.setSupport({ id, up })) as ResponseBody;
   } else {
-    up = up + 1;
+    up += 1;
     operatorR = (await HttpManager.insertUserSupport({ commentId, userId })) as ResponseBody;
     result = (await HttpManager.setSupport({ id, up })) as ResponseBody;
   }
+
   if (result.success && operatorR.success) {
-    // proxy.$refs.up[index].children[0].style.color = "#2796dd";
-    await getComment(playId.value);
+    await getComment(playId.value); // 刷新当前页
   }
+}
+
+// 页码改变时触发
+function handlePageChange(newPage: number) {
+  currentPage.value = newPage;
+  getComment(playId.value);
 }
 
 const attachImageUrl = HttpManager.attachImageUrl;
@@ -234,6 +256,12 @@ const attachImageUrl = HttpManager.attachImageUrl;
       }
     }
   }
+}
+
+/* 分页样式 */
+.pagination {
+  margin-top: 20px;
+  text-align: center;
 }
 
 .icon {

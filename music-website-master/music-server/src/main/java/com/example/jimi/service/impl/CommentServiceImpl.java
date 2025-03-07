@@ -1,6 +1,8 @@
 package com.example.jimi.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.jimi.annotation.AutoFill;
 import com.example.jimi.annotation.UserPermissionCheck;
@@ -60,16 +62,22 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     }
 
     @Override
-    public R commentOfSongId(Integer songId) {
+    public R commentOfSongId(Integer songId, Integer pageNum, Integer pageSize) {
         QueryWrapper<Comment> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("song_id",songId);
-        return R.success(null, commentMapper.selectList(queryWrapper));
+        Page<Comment> page =new Page<>(pageNum,pageSize);
+        IPage<Comment> commentIPage= commentMapper.selectPage(page,queryWrapper);
+        return R.success("分页查询",commentIPage);
     }
 
     @Override
-    public R commentOfSongListId(Integer songListId) {
+    public R commentOfSongListId(Integer songListId, Integer pageNum, Integer pageSize) {
+
         QueryWrapper<Comment> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("song_list_id",songListId);
-        return R.success(null, commentMapper.selectList(queryWrapper));
+        Page<Comment> page =new Page<>(pageNum,pageSize);
+
+        IPage<Comment> commentIPage= commentMapper.selectPage(page,queryWrapper);
+        return R.success("分页查询",commentIPage);
     }
 }
