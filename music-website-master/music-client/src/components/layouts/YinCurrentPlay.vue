@@ -25,10 +25,18 @@
       <div class="lyric-panel">
         <div class="lyric-header">
           <h2 class="title">歌词</h2>
-          <div class="lang-select">
-            <span class="lang-btn" :class="{ active: selectedLang === 'all' }" @click="selectLanguage('all')">全部</span>
-            <span class="lang-btn" :class="{ active: selectedLang === 'ja' }" @click="selectLanguage('ja')">日语</span>
-            <span class="lang-btn" :class="{ active: selectedLang === 'zh' }" @click="selectLanguage('zh')">中文</span>
+          <div class="controls">
+            <div class="lang-select">
+              <span class="lang-btn" :class="{ active: selectedLang === 'all' }" @click="selectLanguage('all')">全部</span>
+              <span class="lang-btn" :class="{ active: selectedLang === 'ja' }" @click="selectLanguage('ja')">日语</span>
+              <span class="lang-btn" :class="{ active: selectedLang === 'zh' }" @click="selectLanguage('zh')">中文</span>
+            </div>
+            <div class="color-select">
+              <span class="color-btn pink" :class="{ active: selectedColor === '#ff6b81' }" @click="selectColor('#ff6b81')"></span>
+              <span class="color-btn blue" :class="{ active: selectedColor === '#3498db' }" @click="selectColor('#3498db')"></span>
+              <span class="color-btn purple" :class="{ active: selectedColor === '#9b59b6' }" @click="selectColor('#9b59b6')"></span>
+              <span class="color-btn green" :class="{ active: selectedColor === '#2ecc71' }" @click="selectColor('#2ecc71')"></span>
+            </div>
           </div>
         </div>
         <div class="lyric-wrapper">
@@ -68,6 +76,7 @@ export default defineComponent({
     const filteredLyricArr = ref<{ time: number; text: string }[]>([]);
     const lyricList = ref<HTMLElement | null>(null);
     const selectedLang = ref("all");
+    const selectedColor = ref("#ff6b81");
 
     const currentLyric = computed(() => {
       const song = currentPlayList.value[currentPlayIndex.value];
@@ -106,41 +115,72 @@ export default defineComponent({
     };
 
     const filterLyric = () => {
-      parseLyric(currentLyric.value); // 每次过滤前重新解析
+      parseLyric(currentLyric.value);
       filteredLyricArr.value = rawLyricArr.value
           .filter((item) => !item.lang || item.lang === selectedLang.value || selectedLang.value === "all")
           .map((item) => ({ time: item.time, text: item.text }));
+      updateHighlight();
     };
 
     const selectLanguage = (lang: string) => {
       selectedLang.value = lang;
-      filterLyric(); // 切换语言时重新解析和过滤
+      filterLyric();
+    };
+
+    const selectColor = (color: string) => {
+      selectedColor.value = color;
+      document.documentElement.style.setProperty('--highlight-color', color);
+      updateHighlight();
+    };
+
+    const updateHighlight = () => {
+      if (filteredLyricArr.value.length === 0 || !lyricList.value) return;
+      const lyricItems = lyricList.value.querySelectorAll("li") as NodeListOf<HTMLElement>;
+      if (lyricItems.length !== filteredLyricArr.value.length) return;
+
+      const currentTime = curTime.value;
+      let activeIndex = -1;
+
+      for (let i = 0; i < filteredLyricArr.value.length; i++) {
+        if (currentTime >= filteredLyricArr.value[i].time) {
+          activeIndex = i;
+        } else {
+          break;
+        }
+      }
+
+      lyricItems.forEach((item, index) => {
+        item.style.color = "#555";
+        item.style.fontSize = "14px";
+        if (index === activeIndex) {
+          item.style.color = "var(--highlight-color)";
+          item.style.fontSize = "18px";
+          lrcTop.value = -index * 40 + 50 + "px";
+        }
+      });
     };
 
     watch(curTime, () => {
-      if (filteredLyricArr.value.length !== 0 && lyricList.value) {
-        const lyricItems = lyricList.value.querySelectorAll("li") as NodeListOf<HTMLElement>;
-        for (let i = 0; i < filteredLyricArr.value.length; i++) {
-          if (curTime.value >= filteredLyricArr.value[i].time) {
-            lyricItems.forEach((item) => {
-              item.style.color = "#555";
-              item.style.fontSize = "14px";
-            });
-            if (i >= 0) {
-              lrcTop.value = -i * 40 + 50 + "px";
-              lyricItems[i].style.color = "#ff6b81";
-              lyricItems[i].style.fontSize = "18px";
-            }
-          }
-        }
-      }
+      updateHighlight();
     });
 
     watch(songId, () => {
-      filterLyric(); // 歌曲切换时重新解析和过滤
+      filterLyric();
     });
 
-    filterLyric(); // 初始解析
+    // 监听 showAside，确保 lyricList 更新
+    watch(showAside, (newVal) => {
+      if (newVal) {
+        // 下边栏显示时，延迟更新 lyricList
+        setTimeout(() => {
+          lyricList.value = (proxy?.$refs.lyricList as HTMLElement) || null;
+          filterLyric(); // 重新解析和更新
+        }, 100); // 延迟 100ms 等待 DOM 渲染
+      }
+    });
+
+    filterLyric();
+    document.documentElement.style.setProperty('--highlight-color', selectedColor.value);
 
     const handleClickOutside = (e: MouseEvent) => {
       const aside = (proxy?.$el as HTMLElement)?.querySelector('.yin-current-play');
@@ -152,6 +192,9 @@ export default defineComponent({
 
     onMounted(() => {
       document.addEventListener('click', handleClickOutside, true);
+      // 初始绑定 lyricList
+      lyricList.value = (proxy?.$refs.lyricList as HTMLElement) || null;
+      filterLyric();
     });
 
     onUnmounted(() => {
@@ -166,7 +209,9 @@ export default defineComponent({
       filteredLyricArr,
       lyricList,
       selectedLang,
+      selectedColor,
       selectLanguage,
+      selectColor,
       getSongTitle,
       playMusic,
     };
@@ -177,6 +222,10 @@ export default defineComponent({
 <style lang="scss" scoped>
 @import "@/assets/css/var.scss";
 @import "@/assets/css/global.scss";
+
+:root {
+  --highlight-color: #ff6b81;
+}
 
 .aside-fade-enter-active {
   transition: all 0.3s ease;
@@ -199,7 +248,7 @@ export default defineComponent({
   bottom: $play-bar-height;
   height: 300px;
   z-index: 101;
-  background: linear-gradient(135deg, #f0f4f8 0%, #e4e9f0 100%); // 渐变背景
+  background: linear-gradient(135deg, #f0f4f8 0%, #e4e9f0 100%);
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   display: flex;
@@ -267,7 +316,7 @@ export default defineComponent({
   height: 100%;
   overflow: hidden;
   position: relative;
-  background: rgba(255, 255, 255, 0.1); // 微透明效果
+  background: rgba(255, 255, 255, 0.1);
   padding: 0 25px;
 }
 
@@ -283,11 +332,15 @@ export default defineComponent({
     text-transform: uppercase;
     letter-spacing: 1px;
   }
-  .lang-select {
+  .controls {
     display: flex;
-    gap: 10px;
+    gap: 20px;
+    .lang-select,
+    .color-select {
+      display: flex;
+      gap: 10px;
+    }
     .lang-btn {
-      display: inline-block;
       width: 36px;
       height: 36px;
       line-height: 36px;
@@ -303,10 +356,29 @@ export default defineComponent({
         color: #fff;
       }
       &.active {
-        background: #ff6b81;
+        background: var(--highlight-color);
         color: #fff;
-        box-shadow: 0 0 8px rgba(255, 107, 129, 0.5);
+        box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
         transform: scale(1.1);
+      }
+    }
+    .color-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid #fff;
+      &.pink { background: #ff6b81; }
+      &.blue { background: #3498db; }
+      &.purple { background: #9b59b6; }
+      &.green { background: #2ecc71; }
+      &:hover {
+        transform: scale(1.2);
+      }
+      &.active {
+        box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+        transform: scale(1.2);
       }
     }
   }

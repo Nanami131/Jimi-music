@@ -1,4 +1,3 @@
-<!-- 文件: src/views/Lyric.vue -->
 <template>
   <div class="song-container">
     <el-image class="song-pic" fit="contain" :src="attachImageUrl(songPic)" />
@@ -11,10 +10,18 @@
     <div class="lyric-container">
       <div class="lyric-header">
         <h2 class="title">歌词</h2>
-        <div class="lang-select">
-          <span class="lang-btn" :class="{ active: selectedLang === 'all' }" @click="selectLanguage('all')">全部</span>
-          <span class="lang-btn" :class="{ active: selectedLang === 'ja' }" @click="selectLanguage('ja')">日语</span>
-          <span class="lang-btn" :class="{ active: selectedLang === 'zh' }" @click="selectLanguage('zh')">中文</span>
+        <div class="controls">
+          <div class="lang-select">
+            <span class="lang-btn" :class="{ active: selectedLang === 'all' }" @click="selectLanguage('all')">全部</span>
+            <span class="lang-btn" :class="{ active: selectedLang === 'ja' }" @click="selectLanguage('ja')">日语</span>
+            <span class="lang-btn" :class="{ active: selectedLang === 'zh' }" @click="selectLanguage('zh')">中文</span>
+          </div>
+          <div class="color-select">
+            <span class="color-btn pink" :class="{ active: selectedColor === '#ff6b81' }" @click="selectColor('#ff6b81', 'rgba(255, 107, 129, 0.2)')"></span>
+            <span class="color-btn blue" :class="{ active: selectedColor === '#3498db' }" @click="selectColor('#3498db', 'rgba(52, 152, 219, 0.2)')"></span>
+            <span class="color-btn purple" :class="{ active: selectedColor === '#9b59b6' }" @click="selectColor('#9b59b6', 'rgba(155, 89, 182, 0.2)')"></span>
+            <span class="color-btn green" :class="{ active: selectedColor === '#2ecc71' }" @click="selectColor('#2ecc71', 'rgba(46, 204, 113, 0.2)')"></span>
+          </div>
         </div>
       </div>
       <div class="song-lyric">
@@ -50,6 +57,7 @@ export default defineComponent({
     const filteredLyricArr = ref<{ time: number; text: string }[]>([]);
     const lyricList = ref<HTMLElement | null>(null);
     const selectedLang = ref("all");
+    const selectedColor = ref("#ff6b81");
 
     const songId = computed(() => store.getters.songId);
     const currentPlayList = computed(() => store.getters.currentPlayList);
@@ -100,6 +108,7 @@ export default defineComponent({
       filteredLyricArr.value = rawLyricArr.value
           .filter((item) => !item.lang || item.lang === selectedLang.value || selectedLang.value === "all")
           .map((item) => ({ time: item.time, text: item.text }));
+      updateHighlight();
     };
 
     const selectLanguage = (lang: string) => {
@@ -107,23 +116,44 @@ export default defineComponent({
       filterLyric();
     };
 
-    watch(curTime, () => {
-      if (filteredLyricArr.value.length !== 0 && lyricList.value) {
-        const lyricItems = lyricList.value.querySelectorAll("li") as NodeListOf<HTMLElement>;
-        for (let i = 0; i < filteredLyricArr.value.length; i++) {
-          if (curTime.value >= filteredLyricArr.value[i].time) {
-            lyricItems.forEach((item) => {
-              item.style.color = "#555";
-              item.style.fontSize = "14px";
-            });
-            if (i >= 0) {
-              lrcTop.value = -i * 40 + 80 + "px"; // 调整为 Lyric.vue 的初始偏移
-              lyricItems[i].style.color = "#ff6b81"; // 与 YinCurrentPlay.vue 一致
-              lyricItems[i].style.fontSize = "18px";
-            }
-          }
+    const selectColor = (color: string, bgColor: string) => {
+      selectedColor.value = color;
+      document.documentElement.style.setProperty('--highlight-color', color);
+      document.documentElement.style.setProperty('--highlight-bg', bgColor);
+      updateHighlight();
+    };
+
+    const updateHighlight = () => {
+      if (filteredLyricArr.value.length === 0 || !lyricList.value) return;
+      const lyricItems = lyricList.value.querySelectorAll("li") as NodeListOf<HTMLElement>;
+      if (lyricItems.length !== filteredLyricArr.value.length) return;
+
+      const currentTime = curTime.value;
+      let activeIndex = -1;
+
+      for (let i = 0; i < filteredLyricArr.value.length; i++) {
+        if (currentTime >= filteredLyricArr.value[i].time) {
+          activeIndex = i;
+        } else {
+          break;
         }
       }
+
+      lyricItems.forEach((item, index) => {
+        item.style.color = "#555";
+        item.style.fontSize = "14px";
+        item.style.background = "transparent"; // 重置背景
+        if (index === activeIndex) {
+          item.style.color = "var(--highlight-color)";
+          item.style.fontSize = "18px";
+          item.style.background = "var(--highlight-bg)"; // 应用浅色背景
+          lrcTop.value = -index * 40 + 80 + "px";
+        }
+      });
+    };
+
+    watch(curTime, () => {
+      updateHighlight();
     });
 
     watch(songId, () => {
@@ -131,6 +161,8 @@ export default defineComponent({
     });
 
     filterLyric();
+    document.documentElement.style.setProperty('--highlight-color', selectedColor.value);
+    document.documentElement.style.setProperty('--highlight-bg', 'rgba(255, 107, 129, 0.2)'); // 默认背景
 
     return {
       songPic,
@@ -140,7 +172,9 @@ export default defineComponent({
       filteredLyricArr,
       lyricList,
       selectedLang,
+      selectedColor,
       selectLanguage,
+      selectColor,
       songId,
       attachImageUrl: HttpManager.attachImageUrl,
     };
@@ -150,6 +184,11 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 @import "@/assets/css/var.scss";
+
+:root {
+  --highlight-color: #ff6b81;
+  --highlight-bg: rgba(255, 107, 129, 0.2); // 默认背景
+}
 
 .song-container {
   position: fixed;
@@ -172,12 +211,13 @@ export default defineComponent({
       line-height: 40px;
       font-size: 18px;
       padding-left: 10%;
+      color: #34495e;
     }
   }
 }
 
 .lyric-container {
-  font-family: $font-family;
+  font-family: 'Arial', sans-serif;
   .lyric-header {
     display: flex;
     justify-content: space-between;
@@ -190,11 +230,15 @@ export default defineComponent({
       text-transform: uppercase;
       letter-spacing: 1px;
     }
-    .lang-select {
+    .controls {
       display: flex;
-      gap: 10px;
+      gap: 20px;
+      .lang-select,
+      .color-select {
+        display: flex;
+        gap: 10px;
+      }
       .lang-btn {
-        display: inline-block;
         width: 36px;
         height: 36px;
         line-height: 36px;
@@ -210,10 +254,29 @@ export default defineComponent({
           color: #fff;
         }
         &.active {
-          background: #ff6b81;
+          background: var(--highlight-color);
           color: #fff;
-          box-shadow: 0 0 8px rgba(255, 107, 129, 0.5);
+          box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
           transform: scale(1.1);
+        }
+      }
+      .color-btn {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid #fff;
+        &.pink { background: #ff6b81; }
+        &.blue { background: #3498db; }
+        &.purple { background: #9b59b6; }
+        &.green { background: #2ecc71; }
+        &:hover {
+          transform: scale(1.2);
+        }
+        &.active {
+          box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+          transform: scale(1.2);
         }
       }
     }
@@ -239,6 +302,7 @@ export default defineComponent({
         line-height: 40px;
         color: #555;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        transition: background 0.3s ease; // 平滑背景过渡
       }
     }
     .no-lyric {
