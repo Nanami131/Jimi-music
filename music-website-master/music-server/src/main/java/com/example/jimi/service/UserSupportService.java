@@ -6,7 +6,7 @@ import com.example.jimi.model.domain.UserSupport;
 import com.example.jimi.model.request.UserSupportRequest;
 
 
-public interface UserSupportService extends IService<UserSupport> {
+public interface UserSupportService {
 
     R isUserSupportComment(UserSupportRequest userSupportRequest);
 
