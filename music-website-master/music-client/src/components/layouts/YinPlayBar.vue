@@ -8,12 +8,12 @@
     <div class="control-box">
       <div class="info-box">
         <!--歌曲图片-->
-      <div @click="goPlayerPage">
-         <el-image class="song-bar-img" fit="contain"/>
-      </div>
+        <div @click="goPlayerPage">
+          <el-image class="song-bar-img" fit="contain" :src="songPic" />
+        </div>
         <!--播放开始结束时间-->
         <div v-if="songId">
-          <div class="song-info">{{ this.songTitle }} - {{ this.singerName }}</div>
+          <div class="song-info">{{ songTitle }} - {{ singerName }}</div>
           <div class="time-info">{{ startTime }} / {{ endTime }}</div>
         </div>
       </div>
@@ -31,8 +31,7 @@
           <yin-icon v-else :icon="iconList.JINGYIN"></yin-icon>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-slider class="yin-slider" style="height: 150px; margin: 10px 0" v-model="volume"
-                         :vertical="true"></el-slider>
+              <el-slider class="yin-slider" style="height: 150px; margin: 10px 0" v-model="volume" :vertical="true"></el-slider>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -49,12 +48,7 @@
         <yin-icon
             class="yin-play-show"
             :icon="iconList.download"
-            @click="
-            downloadMusic({
-              songUrl,
-              songName: singerName + '-' + songTitle,
-            })
-          "
+            @click="downloadMusic({ songUrl, songName: singerName + '-' + songTitle })"
         ></yin-icon>
         <!--歌曲列表-->
         <yin-icon :icon="iconList.LIEBIAO" @click="changeAside"></yin-icon>
@@ -64,24 +58,24 @@
 </template>
 
 <script lang="ts">
-import {computed, defineComponent, getCurrentInstance, onMounted, ref, watch} from "vue";
-import {mapGetters, useStore} from "vuex";
+import { computed, defineComponent, getCurrentInstance, onMounted, ref, watch } from "vue";
+import { mapGetters, useStore } from "vuex";
 import mixin from "@/mixins/mixin";
 import YinIcon from "./YinIcon.vue";
-import {HttpManager} from "@/api";
-import {formatSeconds} from "@/utils";
-import {Icon, RouterName} from "@/enums";
+import { HttpManager } from "@/api";
+import { formatSeconds } from "@/utils";
+import { Icon, RouterName } from "@/enums";
 
 export default defineComponent({
   components: {
     YinIcon,
   },
   setup() {
-    const {proxy} = getCurrentInstance();
+    const { proxy } = getCurrentInstance();
     const store = useStore();
-    const {routerManager, playMusic, checkStatus, downloadMusic} = mixin();
+    const { routerManager, playMusic, checkStatus, downloadMusic } = mixin();
 
-    const isCollection = ref(false); // 是否收藏
+    const isCollection = ref(false);
 
     const userIdVO = computed(() => store.getters.userId);
     const songIdVO = computed(() => store.getters.songId);
@@ -100,19 +94,19 @@ export default defineComponent({
       const userId = userIdVO.value;
       const type = '0';
       const songId = songIdVO.value;
-      isCollection.value = ((await HttpManager.isCollection({userId, type, songId})) as ResponseBody).data;
+      isCollection.value = ((await HttpManager.isCollection({ userId, type, songId })) as ResponseBody).data;
     }
 
     async function changeCollection() {
       if (!checkStatus()) return;
 
       const userId = userIdVO.value;
-      const type = '0'; //这里要看看 不能直接写死
+      const type = '0';
       const songId = songIdVO.value;
 
       const result = isCollection.value
           ? ((await HttpManager.deleteCollection(userIdVO.value, songIdVO.value)) as ResponseBody)
-          : ((await HttpManager.setCollection({userId, type, songId})) as ResponseBody);
+          : ((await HttpManager.setCollection({ userId, type, songId })) as ResponseBody);
       (proxy as any).$message({
         message: result.message,
         type: result.type,
@@ -132,14 +126,14 @@ export default defineComponent({
       checkStatus,
       attachImageUrl: HttpManager.attachImageUrl,
       changeCollection,
-      downloadMusic
+      downloadMusic,
     };
   },
   data() {
     return {
       startTime: "00:00",
       endTime: "00:00",
-      nowTime: 0, // 进度条的位置
+      nowTime: 0,
       toggle: true,
       volume: 50,
       playState: Icon.XUNHUAN,
@@ -161,37 +155,33 @@ export default defineComponent({
   computed: {
     ...mapGetters([
       "userId",
-      "isPlay", // 播放状态
-      "playBtnIcon", // 播放状态的图标
-      "songId", // 音乐id
-      "songUrl", // 音乐地址
-      "songTitle", // 歌名
-      "singerName", // 歌手名
-      "songPic", // 歌曲图片
-      "curTime", // 当前音乐的播放位置
-      "duration", // 音乐时长
+      "isPlay",
+      "playBtnIcon",
+      "songId",
+      "songUrl",
+      "songTitle",
+      "singerName",
+      "songPic",
+      "curTime",
+      "duration",
       "currentPlayList",
-      "currentPlayIndex", // 当前歌曲在歌曲列表的位置
-      "showAside", // 是否显示侧边栏
-      "autoNext", // 用于触发自动播放下一首
+      "currentPlayIndex",
+      "showAside",
+      "autoNext",
     ]),
   },
   watch: {
-    // 切换播放状态的图标
     isPlay(value) {
       this.$store.commit("setPlayBtnIcon", value ? Icon.ZANTING : Icon.BOFANG);
     },
     volume() {
       this.$store.commit("setVolume", this.volume / 100);
     },
-    // 播放时间的开始和结束
     curTime() {
       this.startTime = formatSeconds(this.curTime);
       this.endTime = formatSeconds(this.duration);
-      // 移动进度条
       this.nowTime = (this.curTime / this.duration) * 100;
     },
-    // 自动播放下一首
     autoNext() {
       this.next();
     },
@@ -200,7 +190,6 @@ export default defineComponent({
     changeAside() {
       this.$store.commit("setShowAside", !this.showAside);
     },
-    // 控制音乐播放 / 暂停
     togglePlay() {
       this.$store.commit("setIsPlay", this.isPlay ? false : true);
     },
@@ -211,7 +200,6 @@ export default defineComponent({
       this.playStateIndex = this.playStateIndex >= this.playStateList.length - 1 ? 0 : ++this.playStateIndex;
       this.playState = this.playStateList[this.playStateIndex];
     },
-    // 上一首
     prev() {
       if (this.playState === Icon.LUANXU) {
         let playIndex = Math.floor(Math.random() * this.currentPlayList.length);
@@ -228,7 +216,6 @@ export default defineComponent({
         }
       }
     },
-    // 下一首
     next() {
       if (this.playState === Icon.LUANXU) {
         let playIndex = Math.floor(Math.random() * this.currentPlayList.length);
@@ -245,7 +232,6 @@ export default defineComponent({
         }
       }
     },
-    // 选中播放
     toPlay(url) {
       if (url && url !== this.songUrl) {
         const song = this.currentPlayList[this.currentPlayIndex];
@@ -261,12 +247,118 @@ export default defineComponent({
       }
     },
     goPlayerPage() {
-      this.routerManager(RouterName.Lyric, {path: `${RouterName.Lyric}/${this.songId}`});
+      this.routerManager(RouterName.Lyric, { path: `${RouterName.Lyric}/${this.songId}` });
     },
   },
 });
 </script>
 
 <style lang="scss" scoped>
-@import "@/assets/css/yin-play-bar.scss";
+@import "@/assets/css/var.scss";
+@import "@/assets/css/global.scss";
+
+.play-bar {
+  position: fixed;
+  z-index: 100;
+  bottom: 0;
+  width: 100%;
+  transition: all 0.5s;
+
+  .fold {
+    position: absolute;
+    bottom: $play-bar-height + 10px;
+    left: 20px;
+    cursor: pointer;
+  }
+
+  .progress {
+    position: absolute;
+    margin-top: -10px;
+  }
+
+  .control-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: $play-bar-height;
+    width: 100%;
+    background-color: $theme-play-bar-color;
+
+    .song-ctr {
+      position: relative;
+      margin: auto;
+      flex-wrap: nowrap;
+
+      svg {
+        width: 5rem;
+        cursor: pointer;
+      }
+    }
+
+    .info-box {
+      .song-bar-img {
+        width: calc($play-bar-height - 15px);
+        height: calc($play-bar-height - 15px);
+        border-radius: 4px;
+        margin-right: 10px;
+        cursor: pointer;
+      }
+      .song-info {
+        font-size: 14px;
+      }
+      .time-info {
+        font-size: 12px;
+        color: $color-grey;
+      }
+    }
+
+    .song-edit {
+      width: 30%;
+      justify-content: flex-end;
+    }
+  }
+}
+
+.turn {
+  transform: rotate(180deg);
+}
+
+.show {
+  bottom: -($play-bar-height) + 5px;
+}
+
+.icon {
+  @include icon(1.1em, $color-black);
+}
+
+.active.icon {
+  color: $color-red;
+}
+
+@media screen and (min-width: $sm) {
+  .info-box {
+    width: 30%;
+    min-width: 200px;
+    margin-left: 30px;
+  }
+  .song-ctr,
+  .info-box,
+  .song-edit {
+    display: flex;
+    align-items: center;
+  }
+}
+
+@media screen and (max-width: $sm) {
+  .info-box {
+    display: flex;
+    flex-direction: row;
+    width: 70%;
+    margin-left: 10px;
+  }
+
+  .yin-play-show {
+    display: none;
+  }
+}
 </style>
