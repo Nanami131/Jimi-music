@@ -23,10 +23,18 @@
         </ul>
       </div>
       <div class="lyric-panel">
+        <div class="lyric-header">
+          <h2 class="title">歌词</h2>
+          <div class="lang-select">
+            <span class="lang-btn" :class="{ active: selectedLang === 'all' }" @click="selectLanguage('all')">全部</span>
+            <span class="lang-btn" :class="{ active: selectedLang === 'ja' }" @click="selectLanguage('ja')">日语</span>
+            <span class="lang-btn" :class="{ active: selectedLang === 'zh' }" @click="selectLanguage('zh')">中文</span>
+          </div>
+        </div>
         <div class="lyric-wrapper">
-          <ul :style="{ top: lrcTop }" class="has-lyric" v-if="lyricArr.length" ref="lyricList">
-            <li v-for="(item, index) in lyricArr" :key="index">
-              {{ item[1] || '♪' }}
+          <ul :style="{ top: lrcTop }" class="has-lyric" v-if="filteredLyricArr.length" ref="lyricList">
+            <li v-for="(item, index) in filteredLyricArr" :key="index">
+              {{ item.text || '♪' }}
             </li>
           </ul>
           <div v-else class="no-lyric">
@@ -42,7 +50,6 @@
 import { defineComponent, getCurrentInstance, computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useStore } from "vuex";
 import mixin from "@/mixins/mixin";
-import { parseLyric } from "@/utils"; // 复用 Lyric.vue 的解析函数
 
 export default defineComponent({
   setup() {
@@ -56,37 +63,72 @@ export default defineComponent({
     const curTime = computed(() => store.getters.curTime || 0);
     const currentPlayIndex = computed(() => store.getters.currentPlayIndex);
 
-    // 歌词相关
-    const lrcTop = ref("50px"); // 初始 top 值，与 Lyric.vue 调整为适应新布局
-    const lyricArr = ref<any[]>([]); // 歌词数组，格式与 Lyric.vue 一致 [time, text]
-    const lyricList = ref<HTMLElement | null>(null); // 用于 DOM 操作
+    const lrcTop = ref("50px");
+    const rawLyricArr = ref<{ time: number; text: string; lang?: string }[]>([]);
+    const filteredLyricArr = ref<{ time: number; text: string }[]>([]);
+    const lyricList = ref<HTMLElement | null>(null);
+    const selectedLang = ref("all");
 
-    // 获取当前歌词
     const currentLyric = computed(() => {
       const song = currentPlayList.value[currentPlayIndex.value];
       return song ? song.lyric : "";
     });
 
-    // 解析歌词
-    watch(songId, () => {
-      lyricArr.value = parseLyric(currentLyric.value);
-    });
+    const parseLyric = (lyric: string) => {
+      if (!lyric) {
+        rawLyricArr.value = [];
+        return;
+      }
+      const lines = lyric.split('\n');
+      const timeReg = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
+      const langReg = /\[([a-z]{2})\]/g;
+      rawLyricArr.value = lines
+          .map((line) => {
+            const timeMatch = line.match(timeReg);
+            if (!timeMatch) return null;
 
-    // 同步歌词高亮和滚动
+            const minutes = parseInt(timeMatch[1]) * 60;
+            const seconds = parseInt(timeMatch[2]);
+            const milliseconds = parseInt(timeMatch[3].padEnd(3, '0')) / 1000;
+            const time = minutes + seconds + milliseconds;
+
+            let text = line.replace(timeReg, '').trim();
+            let lang: string | undefined;
+            const langMatches = [...text.matchAll(langReg)];
+            if (langMatches.length > 0) {
+              lang = langMatches[0][1];
+              text = text.replace(langReg, '').trim();
+            }
+
+            return { time, text, lang };
+          })
+          .filter((item) => item !== null) as { time: number; text: string; lang?: string }[];
+    };
+
+    const filterLyric = () => {
+      parseLyric(currentLyric.value); // 每次过滤前重新解析
+      filteredLyricArr.value = rawLyricArr.value
+          .filter((item) => !item.lang || item.lang === selectedLang.value || selectedLang.value === "all")
+          .map((item) => ({ time: item.time, text: item.text }));
+    };
+
+    const selectLanguage = (lang: string) => {
+      selectedLang.value = lang;
+      filterLyric(); // 切换语言时重新解析和过滤
+    };
+
     watch(curTime, () => {
-      if (lyricArr.value.length !== 0 && lyricList.value) {
+      if (filteredLyricArr.value.length !== 0 && lyricList.value) {
         const lyricItems = lyricList.value.querySelectorAll("li") as NodeListOf<HTMLElement>;
-        for (let i = 0; i < lyricArr.value.length; i++) {
-          if (curTime.value >= lyricArr.value[i][0]) {
-            // 重置所有歌词样式
+        for (let i = 0; i < filteredLyricArr.value.length; i++) {
+          if (curTime.value >= filteredLyricArr.value[i].time) {
             lyricItems.forEach((item) => {
-              item.style.color = "#000";
+              item.style.color = "#555";
               item.style.fontSize = "14px";
             });
-            // 高亮当前行并调整位置
             if (i >= 0) {
-              lrcTop.value = -i * 40 + 50 + "px"; // 每行 40px，偏移 50px 居中
-              lyricItems[i].style.color = "#95d2f6";
+              lrcTop.value = -i * 40 + 50 + "px";
+              lyricItems[i].style.color = "#ff6b81";
               lyricItems[i].style.fontSize = "18px";
             }
           }
@@ -94,10 +136,12 @@ export default defineComponent({
       }
     });
 
-    // 初始化歌词
-    lyricArr.value = currentLyric.value ? parseLyric(currentLyric.value) : [];
+    watch(songId, () => {
+      filterLyric(); // 歌曲切换时重新解析和过滤
+    });
 
-    // 点击外部关闭
+    filterLyric(); // 初始解析
+
     const handleClickOutside = (e: MouseEvent) => {
       const aside = (proxy?.$el as HTMLElement)?.querySelector('.yin-current-play');
       const playBar = document.querySelector('.play-bar');
@@ -119,8 +163,10 @@ export default defineComponent({
       currentPlayList,
       showAside,
       lrcTop,
-      lyricArr,
+      filteredLyricArr,
       lyricList,
+      selectedLang,
+      selectLanguage,
       getSongTitle,
       playMusic,
     };
@@ -147,61 +193,72 @@ export default defineComponent({
 }
 
 .yin-current-play {
-  font-size: 14px;
   width: 100%;
   position: fixed;
   left: 0;
   bottom: $play-bar-height;
   height: 300px;
   z-index: 101;
-  background-color: $color-white;
-  box-shadow: 0 -1px 10px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #f0f4f8 0%, #e4e9f0 100%); // 渐变背景
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   display: flex;
+  border-radius: 12px 12px 0 0;
+  font-family: 'Arial', sans-serif;
 }
 
 .play-list {
   width: 40%;
   height: 100%;
   overflow: hidden;
-  border-right: 1px solid $color-light-grey;
-
-  .title,
-  .control,
-  .menus li {
-    padding-left: 20px;
-    box-sizing: border-box;
-  }
+  background: rgba(255, 255, 255, 0.95);
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 3px 0 10px rgba(0, 0, 0, 0.08);
 
   .title {
-    margin: 10px 0;
+    margin: 15px 0;
+    padding-left: 20px;
+    font-size: 20px;
+    color: #2c3e50;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
   }
 
   .control {
-    margin: 3px 0;
-    color: $color-grey;
+    margin: 5px 0 15px;
+    padding-left: 20px;
+    color: #7f8c8d;
+    font-size: 13px;
+    font-style: italic;
   }
 
   .menus {
     width: 100%;
-    height: calc(100% - 60px);
+    height: calc(100% - 75px);
     cursor: pointer;
     overflow-y: auto;
-    white-space: nowrap;
     li {
       display: block;
       width: 100%;
       height: 40px;
       line-height: 40px;
+      padding-left: 20px;
+      color: #34495e;
+      transition: all 0.3s ease;
       &:hover {
-        background-color: $color-light-grey;
+        background: rgba(240, 245, 250, 0.8);
+        color: #2980b9;
       }
     }
   }
 
   .is-play {
-    color: $color-black;
+    color: #2980b9;
     font-weight: bold;
+    background: linear-gradient(90deg, #e8f1ff, #f5faff);
+    border-left: 4px solid #3498db;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.05);
   }
 }
 
@@ -210,12 +267,54 @@ export default defineComponent({
   height: 100%;
   overflow: hidden;
   position: relative;
-  background-color: $color-light-grey; // 与 Lyric.vue 一致
+  background: rgba(255, 255, 255, 0.1); // 微透明效果
+  padding: 0 25px;
+}
+
+.lyric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  .title {
+    font-size: 20px;
+    color: #2c3e50;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .lang-select {
+    display: flex;
+    gap: 10px;
+    .lang-btn {
+      display: inline-block;
+      width: 36px;
+      height: 36px;
+      line-height: 36px;
+      text-align: center;
+      border-radius: 50%;
+      background: #dfe6e9;
+      color: #636e72;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      &:hover {
+        background: #b2bec3;
+        color: #fff;
+      }
+      &.active {
+        background: #ff6b81;
+        color: #fff;
+        box-shadow: 0 0 8px rgba(255, 107, 129, 0.5);
+        transform: scale(1.1);
+      }
+    }
+  }
 }
 
 .lyric-wrapper {
   position: relative;
-  height: 100%;
+  height: calc(100% - 60px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -223,7 +322,7 @@ export default defineComponent({
 
 .has-lyric {
   position: absolute;
-  transition: all 1s; // 与 Lyric.vue 一致
+  transition: all 1s;
   width: 100%;
   li {
     width: 100%;
@@ -231,6 +330,8 @@ export default defineComponent({
     text-align: center;
     font-size: 14px;
     line-height: 40px;
+    color: #555;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }
 }
 
@@ -238,6 +339,8 @@ export default defineComponent({
   text-align: center;
   span {
     font-size: 18px;
+    color: #95a5a6;
+    font-style: italic;
   }
 }
 </style>

@@ -8,7 +8,7 @@
     <el-table height="550px" border size="small" :data="data" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="40" align="center"></el-table-column>
       <el-table-column label="ID" prop="id" width="50" align="center"></el-table-column>
-      <el-table-column label="歌手图片" prop="pic" width="110" align="center">
+      <el-table-column label="图片" prop="pic" width="110" align="center">
         <template v-slot="scope">
           <div class="singer-img">
             <img :src="attachImageUrl(scope.row.pic)" style="width: 100%" />
